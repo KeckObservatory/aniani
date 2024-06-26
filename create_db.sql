@@ -1,4 +1,3 @@
--- Connect to MariaDB as root or a user with sufficient privileges
 -- Create the database
 CREATE DATABASE IF NOT EXISTS aniani;
 

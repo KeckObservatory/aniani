@@ -45,3 +45,12 @@ VALUES
 INSERT INTO TertiaryWitnessSample (tertiary_number, mirror_type, witness_measured_date, install_date, to_telescope, to_segment_position,T400_540, D400_540, S400_540, T480_600, D480_600, S480_600, T590_720, D590_720, S590_720, T900_1100, D900_1100,S900_1100, notes)
 VALUES
 ('A', NULL, '2021-10-10', '2021-10-14', 2, NULL, 0.91, 0.00, 0.90, 0.90, 0.00, 0.90, 0.89, 0.00, 0.89, 0.89, 0.004, 0.88, "");
+
+-- INSERT INTO
+
+INSERT INTO PrimaryOpticalSurface (segment_id, mirror_type, measured_date, install_date, from_telescope, from_segment_position, T400_540, D400_540, S400_540, T480_600, D480_600, S480_600, T590_720, D590_720, S590_720, T900_1100, D900_1100,S900_1100, is_deleted)
+VALUES 
+(46, 1, '2016-09-16', '2014-09-10', 2, 4, 0.91, NULL, 0.88, 0.90, NULL, 0.88, 0.89, NULL, 0.87, 0.92, NULL, 0.90, "", FALSE),
+(71, 4, '2016-09-16', '2014-09-10', 2, NULL, 0.91, NULL, 0.89, 0.90, NULL, 0.89, 0.90, NULL, 0.88, 0.92, NULL, 0.90, "", FALSE),
+(45, 5, '2016-09-16', '2014-09-09', 2, 29, 0.91, NULL, 0.89, 0.90, NULL, 0.89, 0.90, NULL, 0.88, 0.92, NULL, 0.90, "", FALSE),
+(9, 2, '2016-09-16', '2014-06-10', 2, 14, 0.91, NULL, 0.90, 0.91, NULL, 0.90, 0.90, NULL, 0.89, 0.92, NULL, 0.91, "", FALSE);
