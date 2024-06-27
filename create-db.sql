@@ -1,6 +1,8 @@
 -- Create the database
 CREATE DATABASE IF NOT EXISTS aniani;
 
+USE aniani;
+
 -- CREATE LOG TABLE (TITLE PAGE IN SHEET)
 
 CREATE TABLE CommentLog (
