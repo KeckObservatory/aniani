@@ -1,20 +1,23 @@
+-- Create the database
+CREATE DATABASE IF NOT EXISTS aniani;
+
 -- CREATE LOG TABLE (TITLE PAGE IN SHEET)
 
 CREATE TABLE CommentLog (
     id INT AUTO_INCREMENT PRIMARY KEY,
     author VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    comments VARCHAR(1000)
+    comments VARCHAR(5000)
 
 );
 
 -- CREATE INSTRUMENT CALIBRATION CHECK TABLES
 
-CREATE TABLE InstrumentCalibrationMeasurement (
+CREATE TABLE CalibrationMeasurement (
     id INT AUTO_INCREMENT PRIMARY KEY,
     calibration_sample_measured_date DATE,
 
-    T400_540 FLOAT,
+    T400_540 DOUBLE,
     D400_540 FLOAT,
     S400_540 FLOAT,
 
@@ -31,7 +34,7 @@ CREATE TABLE InstrumentCalibrationMeasurement (
     S900_1100 FLOAT
 );
 
-CREATE TABLE InstrumentCalibrationCertifiedReference (
+CREATE TABLE CalibrationCertifiedReference (
     id INT AUTO_INCREMENT PRIMARY KEY,
     certification_date DATE,
 
