@@ -19,7 +19,7 @@ CREATE TABLE CalibrationMeasurement (
     id INT AUTO_INCREMENT PRIMARY KEY,
     calibration_sample_measured_date DATE,
 
-    T400_540 DOUBLE,
+    T400_540 FLOAT,
     D400_540 FLOAT,
     S400_540 FLOAT,
 

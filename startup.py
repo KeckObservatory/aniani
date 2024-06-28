@@ -2,20 +2,13 @@
 import configparser
 import mysql.connector
 from mysql.connector import Error
+import pandas
 
-
-
-def create_db_connection():
-    """
-    Function to create the database connection for the mysql maria db
-
-    :return: connection to aniani db     
-    :rtype: mysql connection
-    """
+def read_config(config_file):
 
     # read the config file
     config = configparser.ConfigParser()
-    config.read('config.live.ini')
+    config.read(config_file)
 
     # grab the information from the config file
     db_config = {
@@ -25,6 +18,11 @@ def create_db_connection():
         'admin_password': config.get('mysql', 'password'),
         'database': config.get('mysql', 'database')
     }
+
+    return db_config
+
+
+def create_db_connection(db_config):
 
     # create the connection to db 
     connection = mysql.connector.connect(
@@ -47,8 +45,6 @@ def run_sql_script(connection, script_path):
     :param script_path: path to sql script wanted to run
     :type script_path: str
     """
-
-    # need cursor object to run queries
     cursor = connection.cursor()
 
     try:
@@ -61,24 +57,78 @@ def run_sql_script(connection, script_path):
             if statement.strip():
                 cursor.execute(statement)
 
-        print(f"sql script run sucessfully!")
+        print(f"sql scripts ran sucessfully!")
+        cursor.close()
     
     # if something went wrong -> print out the error
     except Error as e:
         print(f"unable to run sql script: {e}")
 
 
+def populate_db(db_config, connection, files):
+
+    cursor = connection.cursor()
+
+    use_query = f"USE {db_config['database']};"
+    cursor.execute(use_query)
+
+    for file in files:
+
+        # read csv using pandas into a 'dataframe'
+        dataframe = pandas.read_csv(file)
+
+        # grap the col names for insert statement
+        dataframe.columns.tolist()
+        col_names = ', '.join(dataframe.columns)
+        col_cnt = ', '.join(['%s']*len(dataframe.columns))
+        table_name = file.replace('.csv', '').replace('csv/', '')
+
+
+        insert_query = f"INSERT INTO {table_name} ({col_names}) VALUES ({col_cnt})"
+
+        # Insert rows into the database
+        for row in dataframe.itertuples(index=False):
+            # Convert 'null' strings to None (which will be NULL in MySQL/MariaDB)
+            #row_values = [None if value == 'null' else value for value in row]
+            row_values = [None if pandas.isna(value) else value for value in row]
+            cursor.execute(insert_query, tuple(row_values))
+        
+        connection.commit()
+
+    cursor.close()
+
+
 
 
 if __name__ == "__main__":
 
-    connection = create_db_connection()
+    db_config = read_config('config.live.ini')
 
-    # to create the db and tables
-    run_sql_script(connection, 'create-db.sql')
+    connection = create_db_connection(db_config)
 
-    # to delete the db and tables 
-    # run_sql_script(connection, 'delete-db.sql')
+    create = True
+
+    if create:
+        # to create or delete the db and tables
+        run_sql_script(connection, 'create-db.sql')
+
+        # populate the db with already existing data
+        # grab csv files with data in them 
+        csv_insert_files = ['csv/CommentLog.csv', 'csv/CalibrationCertifiedReference.csv']
+
+        populate_db(db_config, connection, csv_insert_files)
+
+        connection.close()
+
+    else:
+        run_sql_script(connection, 'delete-db.sql')
+        connection.close()
+
+
+
+    
+
+
 
 
 
