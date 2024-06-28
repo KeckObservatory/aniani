@@ -3,266 +3,36 @@ CREATE DATABASE IF NOT EXISTS aniani;
 
 USE aniani;
 
--- CREATE LOG TABLE (TITLE PAGE IN SHEET)
-
-CREATE TABLE CommentLog (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    author VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    comments VARCHAR(5000)
-
-);
-
 -- CREATE INSTRUMENT CALIBRATION CHECK TABLES
 
-CREATE TABLE CalibrationMeasurement (
+CREATE TABLE CalibrationChecks (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    calibration_sample_measured_date DATE,
+    certified BOOLEAN NOT NULL,
+    measured_date DATE NULL,
+    spectrum ENUM('400-540', '480-600', '590-720', '900-1100') NOT NULL,
+    measurement_type ENUM('T', 'D', 'S') NOT NULL,
+    reflectivity FLOAT NULL,
+    notes MEDIUMTEXT NULL
 
-    T400_540 FLOAT,
-    D400_540 FLOAT,
-    S400_540 FLOAT,
-
-    T480_600 FLOAT,  
-    D480_600 FLOAT,
-    S480_600 FLOAT,
-
-    T590_720 FLOAT,
-    D590_720 FLOAT,
-    S590_720 FLOAT,
-
-    T900_1100 FLOAT,
-    D900_1100 FLOAT,
-    S900_1100 FLOAT
-);
-
-CREATE TABLE CalibrationCertifiedReference (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    certification_date DATE,
-
-    T400_540 FLOAT,
-    D400_540 FLOAT,
-    S400_540 FLOAT,
-
-    T480_600 FLOAT,
-    D480_600 FLOAT,
-    S480_600 FLOAT,
-
-    T590_720 FLOAT,
-    D590_720 FLOAT,
-    S590_720 FLOAT,
-
-    T900_1100 FLOAT,
-    D900_1100 FLOAT,
-    S900_1100 FLOAT
-);
-
--- CREATING WITNESS SAMPLE TABLES
-
-CREATE TABLE PrimaryWitnessSample (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    segment_id INT,
-    mirror_type INT,
-    witness_measured_date DATE,
-    install_date DATE,
-    to_telescope INT, 
-    to_segment_position INT,
-
-    T400_540 FLOAT,
-    D400_540 FLOAT,
-    S400_540 FLOAT,
-
-    T480_600 FLOAT,
-    D480_600 FLOAT,
-    S480_600 FLOAT,
-
-    T590_720 FLOAT,
-    D590_720 FLOAT,
-    S590_720 FLOAT,
-
-    T900_1100 FLOAT,
-    D900_1100 FLOAT,
-    S900_1100 FLOAT,
-    
-    notes VARCHAR(255)
 
 );
 
+-- CREATING MIRROR SAMPLE TABLE
 
-CREATE TABLE SecondaryWitnessSample (
+CREATE TABLE MirrorSamples (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    secondary_number VARCHAR(1),
-    witness_measured_date DATE,
-    install_date DATE,
-    to_telescope INT,
-    to_segment_position INT,
-    -- null ??
-
-    T400_540 FLOAT,
-    D400_540 FLOAT,
-    S400_540 FLOAT,
-
-    T480_600 FLOAT,
-    D480_600 FLOAT,
-    S480_600 FLOAT,
-
-    T590_720 FLOAT,
-    D590_720 FLOAT,
-    S590_720 FLOAT,
-
-    T900_1100 FLOAT,
-    D900_1100 FLOAT,
-    S900_1100 FLOAT,
-
-    notes VARCHAR(255)
-
-);
-
-
-CREATE TABLE TertiaryWitnessSample (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    tertiary_number VARCHAR(1),
-    witness_measured_date DATE,
-    install_date DATE,
-    to_telescope INT,
-    to_segment_position INT,
-    -- null ??
-
-    T400_540 FLOAT,
-    D400_540 FLOAT,
-    S400_540 FLOAT,
-
-    T480_600 FLOAT,
-    D480_600 FLOAT,
-    S480_600 FLOAT,
-
-    T590_720 FLOAT,
-    D590_720 FLOAT,
-    S590_720 FLOAT,
-
-    T900_1100 FLOAT,
-    D900_1100 FLOAT,
-    S900_1100 FLOAT,
-
-    notes VARCHAR(255)
-
-);
-
--- CREATINT OPTICAL SURFACE TABLES
-
-CREATE TABLE PrimaryOpticalSurface (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    segment_id INT,
-    mirror_type INT,
-    measured_date DATE,
-    install_date DATE,
-    from_telescope INT,
-    from_segment_position INT,
-
-    T400_540 FLOAT,
-    D400_540 FLOAT,
-    S400_540 FLOAT,
-
-    T480_600 FLOAT,
-    D480_600 FLOAT,
-    S480_600 FLOAT,
-
-    T590_720 FLOAT,
-    D590_720 FLOAT,
-    S590_720 FLOAT,
-
-    T900_1100 FLOAT,
-    D900_1100 FLOAT,
-    S900_1100 FLOAT,
-
-    notes VARCHAR(255),
-    is_deleted BOOLEAN
-
-);
-
-CREATE TABLE SecondaryOpticalSurface (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    secondary_number INT,
-    measured_date DATE,
-    install_date DATE,
-    from_telescope INT,
-    from_segment_position INT,
-
-    T400_540 FLOAT,
-    D400_540 FLOAT,
-    S400_540 FLOAT,
-
-    T480_600 FLOAT,
-    D480_600 FLOAT,
-    S480_600 FLOAT,
-
-    T590_720 FLOAT,
-    D590_720 FLOAT,
-    S590_720 FLOAT,
-
-    T900_1100 FLOAT,
-    D900_1100 FLOAT,
-    S900_1100 FLOAT,
-
-    notes VARCHAR(255),
-    is_deleted BOOLEAN
-
-);
-
-CREATE TABLE TertiaryOpticalSurface (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    tertiary_number INT,
-    measured_date DATE,
-    install_date DATE,
-    from_telescope INT,
-    from_segment_position INT,
-
-    T400_540 FLOAT,
-    D400_540 FLOAT,
-    S400_540 FLOAT,
-
-    T480_600 FLOAT,
-    D480_600 FLOAT,
-    S480_600 FLOAT,
-
-    T590_720 FLOAT,
-    D590_720 FLOAT,
-    S590_720 FLOAT,
-
-    T900_1100 FLOAT,
-    D900_1100 FLOAT,
-    S900_1100 FLOAT,
-
-    notes VARCHAR(255),
-    is_deleted BOOLEAN
-
-);
-
-CREATE TABLE MirrorBarnPrimary (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    segment_id INT,
-    mirror_type INT,
-    measured_date DATE,
-    install_date DATE,
-    from_telescope INT,
-    from_segment_position INT,
-
-    T400_540 FLOAT,
-    D400_540 FLOAT,
-    S400_540 FLOAT,
-
-    T480_600 FLOAT,
-    D480_600 FLOAT,
-    S480_600 FLOAT,
-
-    T590_720 FLOAT,
-    D590_720 FLOAT,
-    S590_720 FLOAT,
-
-    T900_1100 FLOAT,
-    D900_1100 FLOAT,
-    S900_1100 FLOAT,
-
-    notes VARCHAR(255)
-
+    segment_id INT NULL,
+    mirror VARCHAR(50) NULL,
+    mirror_type CHAR NULL,
+    measured_date DATE NULL,
+    install_date DATE NULL,
+    to_telescope INT NULL, 
+    to_segment_position INT NULL,
+    from_telescope INT NULL,
+    from_segment_position INT NULL,
+    spectrum ENUM('400-540', '480-600', '590-720', '900-1100') NOT NULL,
+    measurement_type ENUM('T', 'D', 'S') NOT NULL,
+    reflectivity FLOAT NULL,
+    is_deleted BOOLEAN NOT NULL,
+    notes MEDIUMTEXT NULL
 );

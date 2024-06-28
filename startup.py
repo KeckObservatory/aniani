@@ -5,6 +5,14 @@ from mysql.connector import Error
 import pandas
 
 def read_config(config_file):
+    """
+    Function to read the config file.
+
+    :param config_file: path to the config file
+    :type config_file: str
+    :return: a dict with all extracted config attributes
+    :rtype: dict
+    """
 
     # read the config file
     config = configparser.ConfigParser()
@@ -19,10 +27,19 @@ def read_config(config_file):
         'database': config.get('mysql', 'database')
     }
 
+    # return the dict
     return db_config
 
 
 def create_db_connection(db_config):
+    """
+    Function to create a mysql/python connection to access db
+
+    :param db_config: dict with all the config attributes from read_config()
+    :type db_config: dict
+    :return: the connection between python and the database
+    :rtype: connection object?
+    """
 
     # create the connection to db 
     connection = mysql.connector.connect(
@@ -69,6 +86,8 @@ def populate_db(db_config, connection, files):
 
     cursor = connection.cursor()
 
+    # using the correct db from the config file
+    # sql use -> so all further operations are on the correct db
     use_query = f"USE {db_config['database']};"
     cursor.execute(use_query)
 
@@ -77,22 +96,39 @@ def populate_db(db_config, connection, files):
         # read csv using pandas into a 'dataframe'
         dataframe = pandas.read_csv(file)
 
-        # grap the col names for insert statement
-        dataframe.columns.tolist()
-        col_names = ', '.join(dataframe.columns)
-        col_cnt = ', '.join(['%s']*len(dataframe.columns))
+        # grab the table name from the csv file name without the directory info
         table_name = file.replace('.csv', '').replace('csv/', '')
+        print(table_name)
 
+        # Show columns for the specified table
+        cursor.execute(f"SHOW COLUMNS FROM {table_name}")
+        columns = cursor.fetchall()
 
+        # extract column names into a list
+        # columns is a list of [0]'col name', [1]'type', [3]'is primary key' more properties...
+        # csv does not have primary key -> don't need a col for it
+        col_names = [col[0] for col in columns if col[3] != 'PRI']
+
+        # join the colum names for the insert statement
+        col_names = ', '.join(col_names)
+
+        # grab the length of the col name list to find out how many cols per table
+        # join together a list of '%s' with as many as the col names
+        # so sql knows how many values it is expecting 
+        col_cnt = ', '.join(['%s']*len(dataframe.columns))
+
+        # query string 
         insert_query = f"INSERT INTO {table_name} ({col_names}) VALUES ({col_cnt})"
 
-        # Insert rows into the database
+        # insert statement for each row of the csv at a time
         for row in dataframe.itertuples(index=False):
-            # Convert 'null' strings to None (which will be NULL in MySQL/MariaDB)
-            #row_values = [None if value == 'null' else value for value in row]
+        
+            # if there is not a value -> set it to null in the sql table
             row_values = [None if pandas.isna(value) else value for value in row]
+
             cursor.execute(insert_query, tuple(row_values))
         
+        # commit changes to the db
         connection.commit()
 
     cursor.close()
@@ -114,7 +150,7 @@ if __name__ == "__main__":
 
         # populate the db with already existing data
         # grab csv files with data in them 
-        csv_insert_files = ['csv/CommentLog.csv', 'csv/CalibrationCertifiedReference.csv']
+        csv_insert_files = ['csv/CalibrationChecks.csv', 'csv/MirrorSamples.csv']
 
         populate_db(db_config, connection, csv_insert_files)
 
