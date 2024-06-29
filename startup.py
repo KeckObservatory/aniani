@@ -94,11 +94,11 @@ def populate_db(db_config, connection, files):
     for file in files:
 
         # read csv using pandas into a 'dataframe'
-        dataframe = pandas.read_csv(file)
+        dataframe = pandas.read_csv(file, header=None)
 
         # grab the table name from the csv file name without the directory info
         table_name = file.replace('.csv', '').replace('csv/', '')
-        print(table_name)
+        print('inserting data into:', table_name)
 
         # Show columns for the specified table
         cursor.execute(f"SHOW COLUMNS FROM {table_name}")
@@ -109,8 +109,10 @@ def populate_db(db_config, connection, files):
         # csv does not have primary key -> don't need a col for it
         col_names = [col[0] for col in columns if col[3] != 'PRI']
 
+
         # join the colum names for the insert statement
         col_names = ', '.join(col_names)
+        # print(col_names)
 
         # grab the length of the col name list to find out how many cols per table
         # join together a list of '%s' with as many as the col names
@@ -125,6 +127,7 @@ def populate_db(db_config, connection, files):
         
             # if there is not a value -> set it to null in the sql table
             row_values = [None if pandas.isna(value) else value for value in row]
+            # print(row_values)
 
             cursor.execute(insert_query, tuple(row_values))
         
@@ -132,7 +135,6 @@ def populate_db(db_config, connection, files):
         connection.commit()
 
     cursor.close()
-
 
 
 
