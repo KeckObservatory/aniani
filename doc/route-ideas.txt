@@ -1,0 +1,32 @@
+READ
+- info from the last date
+    for calibration
+    and for reflectiviey
+- info from a specific date 
+- info from a range of dates
+- 
+
+CREATE
+- add new entry for mirror reflectiviey
+- add new entry for a calibration 
+
+UPDATE
+- change the notes 
+
+DELETE
+- change the is_deleted flag from any table
+
+1. Delete an entry:
+    Update the is_deleted flag and change the notes if needed.
+2. Add new entry into reflectivity data:
+    Ask for all avaliable info and create an entry.
+3. Add new entry into the calibration info:
+    Ask for al avaliable info and if it is certified or not.
+4. Update the notes:
+    Change the value of the notes col for a specific entry.
+5. Read info from the last date.
+    For a givem mirror, mirror id, telescope, wavelength...
+6. Read info from last calibration:
+    Ask if it is certied or not.
+7. Read and post info given a range of dates.
+    Find out what data should be returned.

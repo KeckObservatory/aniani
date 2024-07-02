@@ -1,0 +1,40 @@
+openapi: 3.0.3
+info:
+  title: aniani api
+  description: api for aniani reflectivity information
+  contact:
+    email: adelagarza@keck.hawaii.edu
+  version: 1.0.0
+servers:
+- url: http://localhost:3000/aniani/
+  description: just local host
+tags:
+- name: calibration
+- name: reflectivity-samples
+paths:
+  /getMostRecentSample:
+    get:
+      tags:
+        - reflectiviey-samples
+      summary: return the most recent reflectivity data 
+      operationId: getMostRecentSample
+      parameters:
+        - $ref: '#/components/parameters/mirrors'
+      responses:
+        '200':
+          description: returns 
+    
+    
+components:
+  parameters:
+    mirrors:
+      name: mirrors
+      in: query
+      description: array of telescope mirrors
+      example: "primary, secondary, tertiary"
+      required: true
+      schema:
+        type: array
+        items:
+          type:string
+      
