@@ -50,8 +50,22 @@ def delete_data():
 
 
 @app.route("/getRecent", methods=['GET'])
-def get_recent_data():
-    pass 
+def get_recent():
+    '''
+    get most recent data for segments in all positions (1-36) by date
+    and the ones for the secondary and tertiary mirrors
+
+    1. get R-average of all wavelengths for each segment "before installing" / "clean" -> witness sample
+    2. sort by date find latest measurement for each segment position (1-36)
+    3. return the averages and each wavelength for each segment
+
+    need: date (optional)
+        
+    '''
+
+@app.route("/getRecentFromDate", methods=['GET'])
+def get_recent_data_from_date():
+    pass
 
 
 @app.rote("/fancyMath", methods['GET'])

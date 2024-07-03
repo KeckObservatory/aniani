@@ -50,3 +50,25 @@ def create_db_connection(db_config):
 
     # returning the connection
     return connection
+
+
+def find_average_reflectiviey(date, connection):
+
+    query = f"""
+    SELECT 
+        spectrum,
+        AVG(reflectivity) AS average_reflectivity
+    FROM 
+        MirrorSamples
+    WHERE 
+        measured_date >= '{date}'
+    GROUP BY 
+        spectrum;
+    """
+    cursor = connection.cursor()
+    cursor.execute(query)
+
+def get_latest_reflectivity(conenction):
+    pass
+
+
