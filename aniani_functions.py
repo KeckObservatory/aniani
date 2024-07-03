@@ -52,23 +52,80 @@ def create_db_connection(db_config):
     return connection
 
 
-def find_average_reflectiviey(date, connection):
-
-    query = f"""
-    SELECT 
-        spectrum,
-        AVG(reflectivity) AS average_reflectivity
-    FROM 
-        MirrorSamples
-    WHERE 
-        measured_date >= '{date}'
-    GROUP BY 
-        spectrum;
+def get_reflectivity_status(connection, tel_num, mirror):
     """
+    Function to return the latest reflectivity data for the primary mirror.
+    Just plain data (no math done to it yet), simply the most recent values
+    for each wavelength for each position on the primary mirror.        
+
+    :param connection: mysql db connection
+    :type connection: object
+    :return: dictionary of the form with #s 0-151 (for all mirrors)
+        {
+            #: {
+                install_date
+                measurement_type
+                mirror
+                mirror_type
+                reflectivity
+                segment_id
+                segment_position
+                spectrum
+            }
+        }
+    :rtype: dict
+    """    
+
+    # run the query
     cursor = connection.cursor()
+    query = "USE aniani;"
     cursor.execute(query)
 
-def get_latest_reflectivity(conenction):
-    pass
+    query = f"""
+        WITH ranked_data AS (
+            SELECT
+                mirror,
+                mirror_type,
+                segment_position,
+                spectrum,
+                segment_id,
+                reflectivity,
+                install_date,
+                measurement_type,
+                ROW_NUMBER() OVER (
+                    PARTITION BY segment_position, spectrum, measurement_type
+                    ORDER BY install_date DESC
+                ) AS rn
+            FROM
+                MirrorSamples
+            WHERE
+                mirror = '{mirror}'
+                AND sample_status = 'clean'
+                AND telescope_num = {tel_num}
+                AND measurement_type = 'T'
+        )
+        SELECT
+            mirror,
+            mirror_type,
+            segment_position,
+            segment_id,
+            spectrum,
+            measurement_type,
+            reflectivity,
+            install_date
+        FROM
+            ranked_data
+        WHERE
+            rn = 1;
+        """
 
+    # run sql query
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(query)
+    results = cursor.fetchall()
+
+    # close the cursor
+    cursor.close()
+
+    return results
 

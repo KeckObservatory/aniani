@@ -31,7 +31,7 @@ CREATE TABLE MirrorSamples (
     install_date DATE NULL,
     sample_status ENUM('clean', 'dirty'),
     telescope_num INT NULL,
-    segment_position INT NULL,
+    segment_position INT NULL (value >= 1 AND value <= 36),
     spectrum ENUM('400-540', '480-600', '590-720', '900-1100') NOT NULL,
     measurement_type ENUM('T', 'D', 'S') NOT NULL,
     reflectivity FLOAT NULL,

@@ -1,5 +1,4 @@
 from flask import Flask, request
-from flask_mysqldb import MySQL
 from os.path import isfile
 import configparser
 from aniani_functions import *
@@ -13,62 +12,54 @@ app = Flask(__name__)
 
 @app.route("/", methods=["GET"])
 def home():
-    """
-    Display an error
-    """
-
     return {"status":"sucess", "message":"home page for aniani applicaton"}
 
 
 @app.route("/addData", methods=['POST'])
 def add_data():
     '''
-    data needed to add to db...
-    {
-        mirror = str,
-        segment_id = int,
-        mirror_type = enum ('1','2','3','4','5','6','A','B','C'),
-        measured_date = str,
-        install_date = str,
-        telescope_status = enum ('before_installing','after_uninstalling')
-        telescope_num = int
-        .... 
-
-        ever column but is_deleted
-    }
+    data needed to add to db... -> every col except is_deleted
     '''
 
 
 @app.route("/deleteData", methods=['PATCH'])
 def delete_data():
     '''
-        data needed to update db..
-    {
-
-    }
+        data needed to update db -> 
     '''
 
 
-@app.route("/getRecent", methods=['GET'])
-def get_recent():
+@app.route("/getCurrent", methods=['GET'])
+def get_current_reflectivity_status():
     '''
-    get most recent data for segments in all positions (1-36) by date
+    get most recent reflectivity total ('T') data for segments in all positions (1-36) 
     and the ones for the secondary and tertiary mirrors
-
-    1. get R-average of all wavelengths for each segment "before installing" / "clean" -> witness sample
-    2. sort by date find latest measurement for each segment position (1-36)
-    3. return the averages and each wavelength for each segment
-
-    need: date (optional)
-        
     '''
+
+    db_config = read_db_config('config.live.ini')
+    connection = create_db_connection(db_config)
+
+    tel_num = 1
+    mirror = 'primary'
+    results = get_reflectivity_status(connection, tel_num, mirror)
+
+    mirror = 'secondary'
+    results += get_reflectivity_status(connection, tel_num, mirror)
+
+    mirror = 'tertiary'
+    results += get_reflectivity_status(connection, tel_num, mirror)
+    
+    connection.close()
+    return results
+
 
 @app.route("/getRecentFromDate", methods=['GET'])
 def get_recent_data_from_date():
+
     pass
 
 
-@app.rote("/fancyMath", methods['GET'])
+@app.route("/fancyMath", methods=['GET'])
 def fancy_math():
     pass
 
