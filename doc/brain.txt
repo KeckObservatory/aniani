@@ -13,7 +13,7 @@
    find the coating degredation value
    find standard data of the degredation
 
-    S_delta = S_measured - S_average for each wavelength
+    S_delta = S_measured - S_average_mean for each wavelength
 
     S_degrade = S_delta - S_average for each wavelength
 
@@ -33,7 +33,7 @@
 
     else: S_telscope_segment_current = S_measurement + (-1 * S_slope_rms * S_telescope_segment_current)
 
-6) plotting K1 then K2
+6) plotting K1 then K@
    
 
     if tel_current(3)_date is NAN
@@ -50,6 +50,73 @@
     plot estmiate rate of decay R/year
 
         -1 * S_Slope_rms(4) * 365 for all wavelength
+    
+Spectral = reflectivey (acutal recorded data)
+
+---------------------------
+
+** only using "S" data
+
+1) 
+    date_delta = measured_date - install_date
+
+3) 
+    where sample_status = 'clean'
+    where the value is not NULL
+
+    for 400-450, 480-600, 590-720, 900-1100:
+        for T, D, S:
+            find the mean, max, min, rms 
+            (44 total data points)
+
+            Spect_avg / Spectal_slope for each spectrum, TDS
+            1: avg.mean
+            2: avg.max
+            3: avg.min
+            4: avg.rms
+
+4) 
+    for 400-450, 480-600, 590-720, 900-1100:
+        for T, D, S:
+            difference = reflectivity - mean     (Spectral_diff  - Spect_avg(1))
+            degredation = difference / reflectivity     (Spectral_diff / Spectral)
+            (88 total data points)
+
+    for 400-450, 480-600, 590-720, 900-1100:
+        for T, D, S:
+            slope.mean = mean(degredation)
+            slope.min = min(degredation)
+            slope.max = max(degredation)
+            slope.rms = rms(degredation)
+
+            (44 total data points)
+            Spect_avg / Spectal_slope for each spectrum, TDS
+            1: mean
+            2: max
+            3: min
+            4: rms
+
+5) 
+    ~have a data structure that has all the current segments on K1 and K2 and their respective data~
+
+    for each telescope m :
+        for each segment n :
+            for a segment position p :
+                if new data matches m, n, p but with earlier date:
+                (if date_delta >= coating start date?)
+                    reset the data structure with all new data and new date
+                    if 400-540T is not a number (no data):
+                        current_reflectivity = avg.mean + (-1 * slope.rms * current_reflectivity)
+
+                    else:
+                        current_reflectivity = avg.mean + (-1 * slope.rms * current_reflectivity)
+
+
+
+
+
+
+
     
 
 
