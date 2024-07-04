@@ -1,0 +1,63 @@
+1) find the change in date
+
+        delta_date = measured_date - install_date
+
+2) get snow data? - I think this is turning a excel sheet into dates wheen it snowed
+
+3) calculate spectral "S_measument" data for the primary mirror
+
+    S_average = mean (1) / max (2) / min (3) / rms (4)
+    for "S_spectral" data for PM, witness sample 'clean'
+
+4) find difference between measured "S" and average "S" for each wavelength
+   find the coating degredation value
+   find standard data of the degredation
+
+    S_delta = S_measured - S_average for each wavelength
+
+    S_degrade = S_delta - S_average for each wavelength
+
+    S_slope = mean (1) / max (2) / min (3) / rms (4) of S_degrade
+
+5) FOR EACH TELESCOPE AND SEGMENT, find the lastest date for each segment position with degredation
+   (was only doing this when there was new data added?)
+   (I think he was comparing the date verses the segment data he already had based on what was on the telecop e)
+   if the coating starting date equaled the save most current date = all values nan (3-8) in tel_current
+
+
+    if Blue Refelctive values values are Nan, use average values??? (400-490 is blue light)
+
+    if S_Spectral/S_measurement (6) ->>> S_measurment_400-540 T == (is not a number)
+
+        S_telscope_segment_current = S_average_mean + (-1 * S_slope_rms * S_telescope_segment_current)
+
+    else: S_telscope_segment_current = S_measurement + (-1 * S_slope_rms * S_telescope_segment_current)
+
+6) plotting K1 then K2
+   
+
+    if tel_current(3)_date is NAN
+        use segment install data plotting
+
+    plot estimated reflectiviey values -> tel_current(5, 6, 7, 8)
+
+    plot average reflectance
+
+       mean ( tel_current for 5, 6, 7, 8 )(estimated reflectivity values)
+
+    plot current date
+
+    plot estmiate rate of decay R/year
+
+        -1 * S_Slope_rms(4) * 365 for all wavelength
+    
+
+
+
+
+
+
+
+
+
+
