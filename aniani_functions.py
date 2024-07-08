@@ -1,5 +1,6 @@
 import configparser
 import mysql.connector
+import datetime
 
 # functions for the aniani application!
 
@@ -128,4 +129,52 @@ def get_reflectivity_status(connection, tel_num, mirror):
     cursor.close()
 
     return results
+
+
+def mathy(connection, tel_num):
+
+     # run the query
+    cursor = connection.cursor()
+    query = "USE aniani;"
+    cursor.execute(query)
+
+    query = "select * from mirrorsamples;"
+
+    # returning all PM dirty samles
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(query)
+    data = cursor.fetchall()
+
+    # FIND TIME DIFFERENCE FOR DIRTY SAMPLES
+
+    # list for all the delta dates from the dirty samples
+    date_deltas = []
+
+    # for each row in MirrorSamples table 
+    for item in data:
+        # grab the PM and dirty samples
+        if item['mirror']=='primary' and item['sample_status']=='dirty' and item['telescope_num'] == 1:
+
+            measured_date = item['measured_date']
+            install_date = item['install_date']
+
+            # if there are two dates, find the difference -> else just write error
+            if measured_date is not None and install_date is not None:
+                measured_date = int(measured_date.strftime("%y%m%d"))
+                install_date = int(install_date.strftime("%y%m%d"))
+
+                date_deltas.append(measured_date - install_date)
+            else:
+                date_deltas.append('error')
+
+    # FIND MEAN AND RMS OF WITNESS SAMPLE DATA
+
+    
+    return data
+
+
+
+
+
+
 

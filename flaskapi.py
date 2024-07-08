@@ -61,7 +61,15 @@ def get_recent_data_from_date():
 
 @app.route("/fancyMath", methods=['GET'])
 def fancy_math():
-    pass
+
+    tel_num = 1
+    db_config = read_db_config('config.live.ini')
+    connection = create_db_connection(db_config)
+
+    new_data = mathy(connection, tel_num)
+
+    return new_data
+
 
 
 if __name__ == "__main__":

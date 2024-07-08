@@ -55,14 +55,13 @@ Spectral = reflectivey (acutal recorded data)
 
 ---------------------------
 
-** only using "S" data
 
 1) 
     date_delta = measured_date - install_date
+                
+                = dirty measrued - dirty install date
 
 3) 
-    where sample_status = 'clean'
-    where the value is not NULL
 
     for 400-450, 480-600, 590-720, 900-1100:
         for T, D, S:
