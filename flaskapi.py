@@ -66,9 +66,17 @@ def fancy_math():
     db_config = read_db_config('config.live.ini')
     connection = create_db_connection(db_config)
 
-    new_data = mathy(connection, tel_num)
+    # dict of all rows in the MirrorSamples table
+    data = get_mirrorsamples(connection)
 
-    return new_data
+    # find the time differences between measured and install date
+    date_deltas = find_time_diff(data)
+
+    # find the average spectural 'S' reflectivity for each wavelength for a telescope
+    clean_avg = find_averages_and_rms(data, ['400-540', '480-600', '590-720', '900-1100'], 'S', 'clean', tel_num)
+    dirty_avg = find_averages_and_rms(data, ['400-540', '480-600', '590-720', '900-1100'], 'S', 'dirty', tel_num)
+
+    return dirty_avg
 
 
 

@@ -1,6 +1,7 @@
 import configparser
 import mysql.connector
 import datetime
+import math
 
 # functions for the aniani application!
 
@@ -131,7 +132,15 @@ def get_reflectivity_status(connection, tel_num, mirror):
     return results
 
 
-def mathy(connection, tel_num):
+def get_mirrorsamples(connection):
+    """
+    Get all data from the table MirrorSamples and put into dictionary format.
+
+    :param connection: connection to aniani db
+    :type connection: object
+    :returmn data: list of dicts for each row
+    :type: list
+    """
 
      # run the query
     cursor = connection.cursor()
@@ -145,7 +154,18 @@ def mathy(connection, tel_num):
     cursor.execute(query)
     data = cursor.fetchall()
 
-    # FIND TIME DIFFERENCE FOR DIRTY SAMPLES
+    return data
+
+
+def find_time_diff(data):
+    """
+    Find the time difference in between the install and measured date of the mirror samples.
+
+    :param data: list of dicts from MirrorSamples table
+    :type data: list
+    :return: list of the difference in dates
+    :rtype: list
+    """
 
     # list for all the delta dates from the dirty samples
     date_deltas = []
@@ -153,7 +173,7 @@ def mathy(connection, tel_num):
     # for each row in MirrorSamples table 
     for item in data:
         # grab the PM and dirty samples
-        if item['mirror']=='primary' and item['sample_status']=='dirty' and item['telescope_num'] == 1:
+        if item['mirror']=='primary' and item['sample_status']=='dirty':
 
             measured_date = item['measured_date']
             install_date = item['install_date']
@@ -167,14 +187,64 @@ def mathy(connection, tel_num):
             else:
                 date_deltas.append('error')
 
-    # FIND MEAN AND RMS OF WITNESS SAMPLE DATA
+    return date_deltas
 
+
+
+def find_averages_and_rms(data, spectra, measurment_type, sample_status, tel_num):
+    """
+    Finding the average and rms values for a specfiic spectrum, measurement type, sample on either telescope.
+    Takes the average and rms of the reflectivity.
+
+    :param data: list of dicts from the MirrorSamples table
+    :type data: list
+    :param spectra: all the wavelengths to be averaged
+    :type spectra: list
+    :param measurment_type: the type of measurment T, D, S
+    :type measurment_type: str
+    :param sample_status: what kind of sample? clean or dirty
+    :type sample_status: str
+    :param tel_num: Keck 1 or 2
+    :type tel_num: int
+    :return: dict of the form for each wavelenth with the given avg and rms values
+    {
+        wavelength:
+            average:
+            rms:
+    }
+    :rtype: dict
+    """
+    # dict to return
+    results = {}
     
-    return data
+    # for each wavelength...
+    for spectrum in spectra:
 
+        # set starting values
+        count = 0
+        sum_reflectivity = 0
+        sum_squared_reflectivity = 0
 
+        for item in data:
+            # find the correct data...
+            if item['mirror'] == 'primary' and item['sample_status'] == sample_status and item['telescope_num'] == tel_num and item['measurement_type'] == measurment_type and item['spectrum'] == spectrum:
 
+                # if the reflectivity data exists -> add it to avg, count and rms
+                if item['reflectivity'] is not None:
 
+                    count += 1
+                    reflectivity = item['reflectivity']
+                    sum_reflectivity += reflectivity
+                    sum_squared_reflectivity += reflectivity ** 2
+        
 
+        # find the average sum / number of items
+        average = sum_reflectivity / count
 
+        # find rms -> square root (reflectivity^2 / count) 
+        rms = math.sqrt(sum_squared_reflectivity / count)
 
+        # add them into a dict to return
+        results[spectrum] = {'average': average, 'rms': rms}
+    
+    return results
