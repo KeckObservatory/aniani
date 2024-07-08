@@ -63,11 +63,14 @@ def get_recent_data_from_date():
 def fancy_math():
 
     tel_num = 1
+    measurment_type = 'S'
+    mirror = 'primary'
+
     db_config = read_db_config('config.live.ini')
     connection = create_db_connection(db_config)
 
     # dict of all rows in the MirrorSamples table
-    data = get_mirrorsamples(connection)
+    data = get_mirrorsamples(connection, mirror, tel_num)
 
     # find the time differences between measured and install date
     date_deltas = find_time_diff(data)
@@ -75,6 +78,14 @@ def fancy_math():
     # find the average spectural 'S' reflectivity for each wavelength for a telescope
     clean_avg = find_averages_and_rms(data, ['400-540', '480-600', '590-720', '900-1100'], 'S', 'clean', tel_num)
     dirty_avg = find_averages_and_rms(data, ['400-540', '480-600', '590-720', '900-1100'], 'S', 'dirty', tel_num)
+
+    # find the difference in the clean and dirty samples
+    # diff = dirty = clean average
+    diff = find_diff_from_avg(data, clean_avg, tel_num, measurment_type)
+
+
+    # find the degredation values
+
 
     return dirty_avg
 

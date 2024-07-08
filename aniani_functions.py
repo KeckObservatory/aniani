@@ -2,6 +2,7 @@ import configparser
 import mysql.connector
 import datetime
 import math
+import copy
 
 # functions for the aniani application!
 
@@ -132,7 +133,7 @@ def get_reflectivity_status(connection, tel_num, mirror):
     return results
 
 
-def get_mirrorsamples(connection):
+def get_mirrorsamples(connection, mirror, tel_num):
     """
     Get all data from the table MirrorSamples and put into dictionary format.
 
@@ -147,19 +148,19 @@ def get_mirrorsamples(connection):
     query = "USE aniani;"
     cursor.execute(query)
 
-    query = "select * from mirrorsamples;"
+    query = f"select * from mirrorsamples where mirror = {mirror} and telescope_num == {tel_num};"
 
     # returning all PM dirty samles
     cursor = connection.cursor(dictionary=True)
     cursor.execute(query)
     data = cursor.fetchall()
-
     return data
 
 
 def find_time_diff(data):
     """
     Find the time difference in between the install and measured date of the mirror samples.
+    It also saves the value in the dictonaries themselves.
 
     :param data: list of dicts from MirrorSamples table
     :type data: list
@@ -172,26 +173,33 @@ def find_time_diff(data):
 
     # for each row in MirrorSamples table 
     for item in data:
+
         # grab the PM and dirty samples
-        if item['mirror']=='primary' and item['sample_status']=='dirty':
+        if item['sample_status']=='dirty':
 
             measured_date = item['measured_date']
             install_date = item['install_date']
+            print(item['id'])
 
             # if there are two dates, find the difference -> else just write error
             if measured_date is not None and install_date is not None:
+
                 measured_date = int(measured_date.strftime("%y%m%d"))
                 install_date = int(install_date.strftime("%y%m%d"))
 
-                date_deltas.append(measured_date - install_date)
+                diff = measured_date - install_date
+
+                item['date_delta'] = diff
+                date_deltas.append(diff)
+
             else:
+                item['date_delta'] = 'error'
                 date_deltas.append('error')
 
-    return date_deltas
+    return data
 
 
-
-def find_averages_and_rms(data, spectra, measurment_type, sample_status, tel_num):
+def find_averages_and_rms(data, spectra, measurment_type, sample_status,):
     """
     Finding the average and rms values for a specfiic spectrum, measurement type, sample on either telescope.
     Takes the average and rms of the reflectivity.
@@ -227,10 +235,10 @@ def find_averages_and_rms(data, spectra, measurment_type, sample_status, tel_num
 
         for item in data:
             # find the correct data...
-            if item['mirror'] == 'primary' and item['sample_status'] == sample_status and item['telescope_num'] == tel_num and item['measurement_type'] == measurment_type and item['spectrum'] == spectrum:
+            if item['sample_status'] == sample_status and item['measurement_type'] == measurment_type and item['spectrum'] == spectrum:
 
                 # if the reflectivity data exists -> add it to avg, count and rms
-                if item['reflectivity'] is not None:
+                if not (item['reflectivity']) is  None:
 
                     count += 1
                     reflectivity = item['reflectivity']
@@ -248,3 +256,15 @@ def find_averages_and_rms(data, spectra, measurment_type, sample_status, tel_num
         results[spectrum] = {'average': average, 'rms': rms}
     
     return results
+
+
+def find_diff_from_avg(data, clean_avg, measurment_type, spectrum):
+
+    for item in data:
+
+        if item['sample_status'] == 'dirty' and item['measurement_type'] == measurment_type and item['spectrum'] == spectrum:
+
+            pass
+
+        
+    
