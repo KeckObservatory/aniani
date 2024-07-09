@@ -47,7 +47,8 @@ def create_db_connection(db_config):
         host=db_config['host'],
         port=db_config['port'],
         user=db_config['admin_username'],
-        password=db_config['admin_password']
+        password=db_config['admin_password'],
+        database=db_config['database']
     )
 
     # returning the connection
@@ -56,33 +57,31 @@ def create_db_connection(db_config):
 
 def get_active_segs(connection, tel_num, mirror, measurment_type):
     """
-    Function to return the latest reflectivity data for the primary mirror.
-    Just plain data (no math done to it yet), simply the most recent values
-    for each wavelength for each position on the primary mirror.        
+    For a given mirror, telescope and measurement type (T,D,S), will return a dictionary
+    of the active segment(s) and their values from the table MirrorSamples.
 
-    :param connection: mysql db connection
+    Pulls from the most recent install date of 'clean' samples.
+
+    For PM: returns a list of dictionaries of the info for each wavelength reflectivity measurment,
+        so for 36 segments will return a total of 36*4 entries
+
+    For SM/TM: returns a list of 4 dictionaries of the info for each wavelength reflectivity measurement.
+
+    :param connection: connecton to the mysql db    
     :type connection: object
-    :return: dictionary of the form with #s 0-151 (for all mirrors)
-        {
-            #: {
-                install_date
-                measurement_type
-                mirror
-                mirror_type
-                reflectivity
-                segment_id
-                segment_position
-                spectrum
-            }
-        }
-    :rtype: dict
+    :param tel_num: Keck telescope number (1 or 2)
+    :type tel_num: int
+    :param mirror: Keck telescope mirror ('primary','secondary','tertiary')
+    :type mirror: str
+    :param measurment_type: type of wavelength measurement ('T', 'D', 'S')
+    :type measurment_type: str
+    :return: a list of dictionaries of the rows from the MirrorSamples table from the most recent install date
+    :rtype: list (of dicts)
     """    
-
-    # run the query
+    # connect to the db
     cursor = connection.cursor()
-    query = "USE aniani;"
-    cursor.execute(query)
 
+    # rank the data by the install date (to find the most recent)
     query = f"""
     WITH ranked_data AS (
         SELECT *,
@@ -105,7 +104,7 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
         rn = 1;
     """
 
-    # run sql query
+    # run query and make sure the rows are stored as dictionaries 
     cursor = connection.cursor(dictionary=True)
     cursor.execute(query)
     results = cursor.fetchall()
@@ -118,38 +117,49 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
 
 def get_mirrorsamples(connection, mirror, tel_num, measurement_type):
     """
-    Get all data from the table MirrorSamples and put into dictionary format.
+    Get all the data from the MirrorSamples table from the database, and create
+    a list of dictionaries where each dictionary is a corresponding row in the db.
 
-    :param connection: connection to aniani db
+    :param connection: db connection
     :type connection: object
-    :returmn data: list of dicts for each row
-    :type: list
+    :param mirror: Keck telescope mirror ('primary','secondary','tertiary')
+    :type mirror: str
+    :param tel_num: Keck telescope number (1 or 2)
+    :type tel_num: int
+    :param measurment_type: type of wavelength measurement ('T', 'D', 'S')
+    :type measurment_type: str
+    :return: a list of dictionaries of the rows from the MirrorSamples table 
+    :rtype: list (of dicts)
+    """    
+
+    cursor = connection.cursor()
+
+    # parameterized query to avoid sql injections
+    # treats the parameters like strings (not executable code)
+    query = """
+        SELECT * FROM mirrorsamples
+        WHERE mirror = %s AND telescope_num = %s AND measurement_type = %s;
     """
 
-     # run the query
-    cursor = connection.cursor()
-    query = "USE aniani;"
-    cursor.execute(query)
+    params = (mirror, tel_num, measurement_type)
 
-    query = f"select * from mirrorsamples where mirror='{mirror}' and telescope_num='{tel_num}' and measurement_type='{measurement_type}';"
-
-    # returning all PM dirty samles
     cursor = connection.cursor(dictionary=True)
-    cursor.execute(query)
+    cursor.execute(query, params)
     data = cursor.fetchall()
+
     return data
 
 
 def find_time_diff(data):
     """
-    Find the time difference in between the install and measured date of the mirror samples.
-    It also saves the value in the dictonaries themselves.
+    Finds the time difference between the measusred and install date from rows in the MirrorSamples table.
+    For each dictionary it adds the value 'date_delta' as a key value pair. 
 
-    :param data: list of dicts from MirrorSamples table
-    :type data: list
-    :return: list of the difference in dates
-    :rtype: list
-    """
+    :param data: data retunred from get_mirror_samples
+    :type data: list of dicts
+    :return: updated list of dicts
+    :rtype: list 
+    """    
 
     # list for all the delta dates from the dirty samples
     date_deltas = []
@@ -180,27 +190,26 @@ def find_time_diff(data):
 
 def find_avg_rms(data, spectra, sample_status, attribute):
     """
-    Finding the average and rms values for a specfiic spectrum, measurement type, sample on either telescope.
-    Takes the average and rms of the reflectivity.
+    For a given wavelength, sample status find the average and rms values of a given ~numerical~ attribute.
 
-    :param data: list of dicts from the MirrorSamples table
+    The attribute can be any charactersitic of a dictionary with a number (not str) value.
+
+    :param data: list of dictionaries from the MirrorSamples table
     :type data: list
-    :param spectra: all the wavelengths to be averaged
-    :type spectra: list
-    :param measurment_type: the type of measurment T, D, S
-    :type measurment_type: str
-    :param sample_status: what kind of sample? clean or dirty
-    :type sample_status: str
-    :param tel_num: Keck 1 or 2
-    :type tel_num: int
-    :return: dict of the form for each wavelenth with the given avg and rms values
+    :param spectra: wavelenths to find average and rms of ['400-450', '',''...]
+    :type spectra: list 
+    :param sample_status: if it is a mirror or witness sample ('clean' or 'dirty')
+    :type sample_status: str   
+    :param attribute: key value of a numerical characterstic of the dictionaries
+    :type attribute: str
+    :return: dictionary of the form
     {
-        wavelength:
-            average:
-            rms:
+        '400-450':
+            'average': #,
+            'rms': #
     }
     :rtype: dict
-    """
+    """    
     # dict to return
     results = {}
     
@@ -216,9 +225,10 @@ def find_avg_rms(data, spectra, sample_status, attribute):
             # find the correct data...
             if item['sample_status'] == sample_status and item['spectrum'] == spectrum:
 
-                # if the reflectivity data exists -> add it to avg, count and rms
+                # if the data exists -> add it to avg, count and rms
                 value = item[attribute]
 
+                # if there is a value and NOT an error -> add to average and rms calculations
                 if not value is None and value != 'error':
 
                     count += 1
@@ -229,7 +239,7 @@ def find_avg_rms(data, spectra, sample_status, attribute):
         # find the average sum / number of items
         average = sum / count
 
-        # find rms -> square root (reflectivity^2 / count) 
+        # find rms -> square root(reflectivity^2 / count) 
         rms = math.sqrt(sum_squared / count)
 
         # add them into a dict to return
@@ -239,6 +249,24 @@ def find_avg_rms(data, spectra, sample_status, attribute):
 
 
 def find_degredation(data, clean_avg, measurment_type):
+    """
+    Find the degredation values for given data from the MirrorSamples table, the clean
+    sample averages and the reflectivity measurement type.
+
+    It updates the data list of dicts and adds two key value pairs 'avg_delta' and 'degredation'.
+
+    avg_delta = the average difference for each entry of the measrured reflectivity and average sample
+    degredation = the avg_delta divided by the date_delta (the difference in measrued and installed date)
+
+    :param data: list of dictionaries from the MirrorSamples table
+    :type data: list
+    :param clean_avg: dict returned from find_avg_rms with 'clean' sample_status
+    :type clean_avg: dict
+    :param measurment_type: type of wavelength measurement ('T', 'D', 'S')
+    :type measurment_type: str
+    :return: updated version of 'data' with two new values for each entry 'avg_delta' and 'degredation' as key value pairs.
+    :rtype: list of dicts
+    """    
 
     for item in data:
 
@@ -274,7 +302,21 @@ def find_degredation(data, clean_avg, measurment_type):
     return data
 
         
-def find_current_reflectivity(tel_current, deg_avg, clean_avg):
+def find_predicted_reflectivity(tel_current, deg_avg, clean_avg):
+    """
+    Calculate the current predicted reflectivity using the degradations and clean average values.
+
+    Each segment and wavelength pair entry now will have 'predict_reflectivity' calucluated using the average values.
+
+    :param tel_current: list of dicts of the current active segment(s) returned from get_active_segs
+    :type tel_current: list of dicts
+    :param deg_avg: dictionary with the average and rms values of the degredation for each wavelength
+    :type deg_avg: dict
+    :param clean_avg: dictionary with the average and rms values of the reflectivity for each wavelength
+    :type clean_avg: dict
+    :return: updated version of the tel_current data passed in
+    :rtype: list of dicts
+    """    
 
     count = 0
 
@@ -284,25 +326,42 @@ def find_current_reflectivity(tel_current, deg_avg, clean_avg):
         reflectivity = item['reflectivity']
         date_delta = item['date_delta']
         current_date = datetime.now()
+
+        # find the current date of now
         time_delta = (current_date.day - date_delta)
 
+        # if there is no blue light reflectivity data -> the next 4 entries will not use average values
         if spectrum == '400-540' and reflectivity == None:
             count = 4
 
+        # there was blue light -> calculate the predicted reflectivity by adding the average reflectivity + -(degredation average by time passed)
         if count == 0:
             item['predict_reflectivity'] = clean_avg[spectrum]['average'] + -(deg_avg[spectrum]['rms'] * time_delta)
+
+        # no blue light -> not enough samples -> use current reflectivity not average
         else:
             item['predict_reflectivity'] = reflectivity +  -(deg_avg[spectrum]['rms'] * time_delta)
             count -= 1
 
     return tel_current
 
-        
+
+
 def find_rate_per_year(deg_avg):
+    """
+    
+    Find the rate of decay of reflectivity per year.
 
-    for item in deg_avg:
-        print(item)
+    And a new key value pair for each wavelenth called 'rate_of_decay'  = -1 * the rms degredation value * 365
 
-        item['rate_of_deg'] = -1 * deg_avg['rms'] * 365
+    :param deg_avg: dictionary of average and rms values for each wavelength
+    :type deg_avg: dict
+    :return: updated deg_avg dictionary
+    :rtype: dict
+    """    
+
+    for spectrum in deg_avg:
+
+        deg_avg[spectrum]['rate_of_decay'] = -1 * deg_avg[spectrum]['rms'] * 365
 
     return deg_avg
