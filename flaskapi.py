@@ -41,13 +41,13 @@ def get_current_reflectivity_status():
 
     tel_num = 1
     mirror = 'primary'
-    results = get_reflectivity_status(connection, tel_num, mirror)
+    results = get_active_segs(connection, tel_num, mirror)
 
     mirror = 'secondary'
-    results += get_reflectivity_status(connection, tel_num, mirror)
+    results += get_active_segs(connection, tel_num, mirror)
 
     mirror = 'tertiary'
-    results += get_reflectivity_status(connection, tel_num, mirror)
+    results += get_active_segs(connection, tel_num, mirror)
     
     connection.close()
     return results
@@ -59,7 +59,7 @@ def get_recent_data_from_date():
     pass
 
 
-@app.route("/fancyMath", methods=['GET'])
+@app.route("/primaryPredicts", methods=['GET'])
 def fancy_math():
 
     tel_num = 1
@@ -70,24 +70,36 @@ def fancy_math():
     connection = create_db_connection(db_config)
 
     # dict of all rows in the MirrorSamples table
-    data = get_mirrorsamples(connection, mirror, tel_num)
+    data = get_mirrorsamples(connection, mirror, tel_num, measurment_type)
 
     # find the time differences between measured and install date
-    date_deltas = find_time_diff(data)
+    data = find_time_diff(data)
 
     # find the average spectural 'S' reflectivity for each wavelength for a telescope
-    clean_avg = find_averages_and_rms(data, ['400-540', '480-600', '590-720', '900-1100'], 'S', 'clean', tel_num)
-    dirty_avg = find_averages_and_rms(data, ['400-540', '480-600', '590-720', '900-1100'], 'S', 'dirty', tel_num)
+    clean_avg = find_avg_rms(data, ['400-540', '480-600', '590-720', '900-1100'], 'clean', 'reflectivity')
+    dirty_avg = find_avg_rms(data, ['400-540', '480-600', '590-720', '900-1100'], 'dirty', 'reflectivity')
 
-    # find the difference in the clean and dirty samples
-    # diff = dirty = clean average
-    diff = find_diff_from_avg(data, clean_avg, tel_num, measurment_type)
-
+    # find the difference in the clean and dirty samples and calulate reflectivity degredation
+    data = find_degredation(data, clean_avg, measurment_type)
 
     # find the degredation values
+    deg_avg = find_avg_rms(data, ['400-540', '480-600', '590-720', '900-1100'], 'dirty', 'degredation')
 
+    # find current segments on the telescope
+    tel_current = get_active_segs(connection, tel_num, mirror, measurment_type)
 
-    return dirty_avg
+    # find time difference between meansred and install date for clean samples
+    tel_current = find_time_diff(tel_current)
+
+    # calculate the predicted current reflectivity
+    tel_current = find_current_reflectivity(tel_current, deg_avg, clean_avg)
+
+    # upper left hand corner
+    r_avg = find_avg_rms(tel_current, ['400-540', '480-600', '590-720', '900-1100'], 'clean', 'predict_reflectivity' )
+
+    deg_avg = find_rate_per_year(deg_avg)
+
+    return deg_avg
 
 
 

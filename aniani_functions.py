@@ -1,8 +1,7 @@
 import configparser
 import mysql.connector
-import datetime
+from datetime import datetime
 import math
-import copy
 
 # functions for the aniani application!
 
@@ -55,7 +54,7 @@ def create_db_connection(db_config):
     return connection
 
 
-def get_reflectivity_status(connection, tel_num, mirror):
+def get_active_segs(connection, tel_num, mirror, measurment_type):
     """
     Function to return the latest reflectivity data for the primary mirror.
     Just plain data (no math done to it yet), simply the most recent values
@@ -85,42 +84,26 @@ def get_reflectivity_status(connection, tel_num, mirror):
     cursor.execute(query)
 
     query = f"""
-        WITH ranked_data AS (
-            SELECT
-                mirror,
-                mirror_type,
-                segment_position,
-                spectrum,
-                segment_id,
-                reflectivity,
-                install_date,
-                measurement_type,
-                ROW_NUMBER() OVER (
-                    PARTITION BY segment_position, spectrum, measurement_type
-                    ORDER BY install_date DESC
-                ) AS rn
-            FROM
-                MirrorSamples
-            WHERE
-                mirror = '{mirror}'
-                AND sample_status = 'clean'
-                AND telescope_num = {tel_num}
-                AND measurement_type = 'T'
-        )
-        SELECT
-            mirror,
-            mirror_type,
-            segment_position,
-            segment_id,
-            spectrum,
-            measurement_type,
-            reflectivity,
-            install_date
+    WITH ranked_data AS (
+        SELECT *,
+            ROW_NUMBER() OVER (
+                PARTITION BY segment_position, spectrum, measurement_type
+                ORDER BY install_date DESC
+            ) AS rn
         FROM
-            ranked_data
+            MirrorSamples
         WHERE
-            rn = 1;
-        """
+            mirror = '{mirror}'
+            AND sample_status = 'clean'
+            AND telescope_num = {tel_num}
+            AND measurement_type = '{measurment_type}'
+    )
+    SELECT *
+    FROM
+        ranked_data
+    WHERE
+        rn = 1;
+    """
 
     # run sql query
     cursor = connection.cursor(dictionary=True)
@@ -130,10 +113,10 @@ def get_reflectivity_status(connection, tel_num, mirror):
     # close the cursor
     cursor.close()
 
-    return results
+    return results  
 
 
-def get_mirrorsamples(connection, mirror, tel_num):
+def get_mirrorsamples(connection, mirror, tel_num, measurement_type):
     """
     Get all data from the table MirrorSamples and put into dictionary format.
 
@@ -148,7 +131,7 @@ def get_mirrorsamples(connection, mirror, tel_num):
     query = "USE aniani;"
     cursor.execute(query)
 
-    query = f"select * from mirrorsamples where mirror = {mirror} and telescope_num == {tel_num};"
+    query = f"select * from mirrorsamples where mirror='{mirror}' and telescope_num='{tel_num}' and measurement_type='{measurement_type}';"
 
     # returning all PM dirty samles
     cursor = connection.cursor(dictionary=True)
@@ -174,32 +157,28 @@ def find_time_diff(data):
     # for each row in MirrorSamples table 
     for item in data:
 
-        # grab the PM and dirty samples
-        if item['sample_status']=='dirty':
+        measured_date = item['measured_date']
+        install_date = item['install_date']
 
-            measured_date = item['measured_date']
-            install_date = item['install_date']
-            print(item['id'])
+        # if there are two dates, find the difference -> else just write error
+        if measured_date is not None and install_date is not None:
 
-            # if there are two dates, find the difference -> else just write error
-            if measured_date is not None and install_date is not None:
+            measured_date = int(measured_date.strftime("%y%m%d"))
+            install_date = int(install_date.strftime("%y%m%d"))
 
-                measured_date = int(measured_date.strftime("%y%m%d"))
-                install_date = int(install_date.strftime("%y%m%d"))
+            diff = measured_date - install_date
 
-                diff = measured_date - install_date
+            item['date_delta'] = diff
+            date_deltas.append(diff)
 
-                item['date_delta'] = diff
-                date_deltas.append(diff)
-
-            else:
-                item['date_delta'] = 'error'
-                date_deltas.append('error')
+        else:
+            item['date_delta'] = 'error'
+            date_deltas.append('error')
 
     return data
 
 
-def find_averages_and_rms(data, spectra, measurment_type, sample_status,):
+def find_avg_rms(data, spectra, sample_status, attribute):
     """
     Finding the average and rms values for a specfiic spectrum, measurement type, sample on either telescope.
     Takes the average and rms of the reflectivity.
@@ -230,27 +209,28 @@ def find_averages_and_rms(data, spectra, measurment_type, sample_status,):
 
         # set starting values
         count = 0
-        sum_reflectivity = 0
-        sum_squared_reflectivity = 0
+        sum = 0
+        sum_squared = 0
 
         for item in data:
             # find the correct data...
-            if item['sample_status'] == sample_status and item['measurement_type'] == measurment_type and item['spectrum'] == spectrum:
+            if item['sample_status'] == sample_status and item['spectrum'] == spectrum:
 
                 # if the reflectivity data exists -> add it to avg, count and rms
-                if not (item['reflectivity']) is  None:
+                value = item[attribute]
+
+                if not value is None and value != 'error':
 
                     count += 1
-                    reflectivity = item['reflectivity']
-                    sum_reflectivity += reflectivity
-                    sum_squared_reflectivity += reflectivity ** 2
+                    sum += value
+                    sum_squared += value ** 2
         
 
         # find the average sum / number of items
-        average = sum_reflectivity / count
+        average = sum / count
 
         # find rms -> square root (reflectivity^2 / count) 
-        rms = math.sqrt(sum_squared_reflectivity / count)
+        rms = math.sqrt(sum_squared / count)
 
         # add them into a dict to return
         results[spectrum] = {'average': average, 'rms': rms}
@@ -258,13 +238,71 @@ def find_averages_and_rms(data, spectra, measurment_type, sample_status,):
     return results
 
 
-def find_diff_from_avg(data, clean_avg, measurment_type, spectrum):
+def find_degredation(data, clean_avg, measurment_type):
 
     for item in data:
 
-        if item['sample_status'] == 'dirty' and item['measurement_type'] == measurment_type and item['spectrum'] == spectrum:
+        # grab the diry samples for the measurement type
+        if item['sample_status'] == 'dirty' and item['measurement_type'] == measurment_type:
 
-            pass
+            # grab the row wavelength and reflectivity
+            spectrum = item['spectrum']
+            reflectivity = item['reflectivity']
+            date_delta = item['date_delta']
+
+            # grab the average ~clean~ reflectivity of the same wavelength 
+            average = clean_avg[spectrum]['average']
+
+            # if there is a sample reflectivity
+            if not reflectivity is None:
+
+                # calculate the difference between dirty current and the average clean reflectivity
+                diff = reflectivity - average
+
+                # calculate reflectivity degredation by the difference in change / change in date since measured and installed 
+                degredation = diff / date_delta
+
+                # adding item into dict for each row
+                item['avg_delta'] = diff
+                item['degredation'] = degredation
+
+            else:
+                item['avg_delta'] = 'error'
+                item['degredation'] = 'error'
+
+
+    return data
 
         
-    
+def find_current_reflectivity(tel_current, deg_avg, clean_avg):
+
+    count = 0
+
+    for item in tel_current:
+
+        spectrum = item['spectrum']
+        reflectivity = item['reflectivity']
+        date_delta = item['date_delta']
+        current_date = datetime.now()
+        time_delta = (current_date.day - date_delta)
+
+        if spectrum == '400-540' and reflectivity == None:
+            count = 4
+
+        if count == 0:
+            item['predict_reflectivity'] = clean_avg[spectrum]['average'] + -(deg_avg[spectrum]['rms'] * time_delta)
+        else:
+            item['predict_reflectivity'] = reflectivity +  -(deg_avg[spectrum]['rms'] * time_delta)
+            count -= 1
+
+    return tel_current
+
+        
+def find_rate_per_year(deg_avg):
+
+    for item in deg_avg:
+        print(item)
+
+        item['rate_of_deg'] = -1 * deg_avg['rms'] * 365
+
+    return deg_avg
