@@ -20,7 +20,7 @@ def add_data():
     '''
     data needed to add to db... -> every col except is_deleted
     '''
-    pass
+    data_to_write = request.args.to_dict()
 
 
 @app.route("/deleteData", methods=['PATCH'])
@@ -34,17 +34,21 @@ def delete_data():
 @app.route("/getCurrent", methods=['GET'])
 def get_current_reflectivity():
 
-    mirror = request.args.get('mirror')
-    if mirror is None:
-        mirror = 'primary'
+    mirror = request.args['mirror'].lower()
+    tel_num = request.args['tel_num']
+    measurement_type = request.args['measurement_type'].upper()
 
-    tel_num = request.args.get('tel_num')
-    if tel_num is None:
-        tel_num = 1
+    if (mirror not in ['primary', 'secondary', 'tertiary'] or
+        tel_num not in [1, 2] or
+        measurement_type not in ['T', 'S', 'D']):
 
-    measurement_type = request.args.get('measurement_type')
-    if measurement_type is None:
-        measurement_type = 'S'
+            return jsonify({
+                'error': 'Invalid input',
+                'valid_mirrors': ['primary', 'secondary', 'tertiary'],
+                'valid_tel_nums': [1, 2],
+                'valid_measurement_types': ['T', 'S', 'D']
+        })
+
 
     # connect to mysql database with config file
     db_config = read_db_config('config.live.ini')
@@ -53,7 +57,7 @@ def get_current_reflectivity():
     # find current segments on the telescope and their information
     tel_current = get_active_segs(connection, tel_num, mirror, measurement_type)
 
-    return jsonify(tel_current), 200
+    return jsonify(tel_current)
 
 
 
@@ -65,17 +69,21 @@ def get_recent_data_from_date():
 @app.route("/primaryPredicts", methods=['GET'])
 def get_predicted_reflectivity():
 
-    mirror = request.args.get('mirror')
-    if mirror is None:
-        mirror = 'primary'
+    mirror = request.args['mirror'].lower()
+    tel_num = request.args['tel_num']
+    measurement_type = request.args['measurement_type'].upper()
 
-    tel_num = request.args.get('tel_num')
-    if tel_num is None:
-        tel_num = 1
+    if (mirror not in ['primary', 'secondary', 'tertiary'] or
+        tel_num not in [1, 2] or
+        measurement_type not in ['T', 'S', 'D']):
 
-    measurement_type = request.args.get('measurement_type')
-    if measurement_type is None:
-        measurement_type = 'S'
+            return jsonify({
+                'error': 'Invalid input',
+                'valid_mirrors': ['primary', 'secondary', 'tertiary'],
+                'valid_tel_nums': [1, 2],
+                'valid_measurement_types': ['T', 'S', 'D']
+        })
+
 
     # connect to mysql database with config file
     db_config = read_db_config('config.live.ini')
@@ -129,7 +137,7 @@ def get_predicted_reflectivity():
     # consolidation of all data to be plotted
     to_plot = {}
 
-    return jsonify(deg_avg), 200
+    return jsonify(deg_avg)
 
 
 
