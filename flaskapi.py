@@ -2,9 +2,21 @@ from flask import Flask, request, jsonify
 from os.path import isfile
 import configparser
 from aniani_functions import *
+from jsonschema import validate
+from flask_swagger_ui import get_swaggerui_blueprint
+import yaml
 
 app = Flask(__name__)
 
+reflectivity_input_schema = {
+    "type": "object",
+    "properties": {
+        "mirror": {"type": "string", "enum": ["primary", "secondary", "tertiary"]},
+        "tel_num": {"type": "integer", "enum": [1, 2]},
+        "measurement_type": {"type": "string", "enum": ["T", "S", "D"]}
+    },
+    "required": ["mirror", "tel_num", "measurement_type"]
+}
 
 #---------------------------------------
 # ANIANI API Routes
@@ -13,6 +25,12 @@ app = Flask(__name__)
 @app.route("/", methods=["GET"])
 def home():
     return {"status":"sucess", "message":"home page for aniani applicaton"}
+
+@app.route("/aniani/swagger.json", methods=["GET"])
+def swagger():
+    api_path = './docs/openapi.yaml'
+    with open(api_path, 'r') as f:
+        return jsonify(yaml.safe_load(f))
 
 
 @app.route("/addData", methods=['POST'])
@@ -34,21 +52,17 @@ def delete_data():
 @app.route("/getCurrent", methods=['GET'])
 def get_current_reflectivity():
 
-    mirror = request.args['mirror'].lower()
-    tel_num = request.args['tel_num']
-    measurement_type = request.args['measurement_type'].upper()
+    input = {
+    "mirror": request.args['mirror'].lower(),
+    "tel_num": int(request.args['tel_num']),
+    "measurement_type": request.args['measurement_type'].upper()
+    }       
 
-    if (mirror not in ['primary', 'secondary', 'tertiary'] or
-        tel_num not in [1, 2] or
-        measurement_type not in ['T', 'S', 'D']):
-
-            return jsonify({
-                'error': 'Invalid input',
-                'valid_mirrors': ['primary', 'secondary', 'tertiary'],
-                'valid_tel_nums': [1, 2],
-                'valid_measurement_types': ['T', 'S', 'D']
-        })
-
+    validate(input, reflectivity_input_schema)
+    
+    mirror = input['mirror']
+    tel_num = input['tel_num']
+    measurement_type = input['measurement_type']
 
     # connect to mysql database with config file
     db_config = read_db_config('config.live.ini')
@@ -57,7 +71,22 @@ def get_current_reflectivity():
     # find current segments on the telescope and their information
     tel_current = get_active_segs(connection, tel_num, mirror, measurement_type)
 
-    return jsonify(tel_current)
+    pretty_print = {}
+
+    for item in tel_current:
+        seg_pos = item['segment_position']
+        spectrum = item['spectrum']
+        pretty_print[seg_pos] = {
+            'install_date': item['install_date'],
+            'measured_date': item['measured_date'],
+            'measurement_type': item['measurement_type'],
+            'mirror': item['mirror'],
+            'mirror_type': item['mirror_type'],
+            'seg_id': item['segment_id'],
+            spectrum: item['reflectivity']
+        }
+
+    return jsonify(pretty_print)
 
 
 
@@ -66,23 +95,27 @@ def get_recent_data_from_date():
     pass
 
 
-@app.route("/primaryPredicts", methods=['GET'])
+@app.route("/getPredicts", methods=['GET'])
 def get_predicted_reflectivity():
 
-    mirror = request.args['mirror'].lower()
-    tel_num = request.args['tel_num']
-    measurement_type = request.args['measurement_type'].upper()
+    input = {
+        "mirror": request.args['mirror'].lower(),
+        "tel_num": int(request.args['tel_num']),
+        "measurement_type": request.args['measurement_type'].upper()
+        }       
 
-    if (mirror not in ['primary', 'secondary', 'tertiary'] or
-        tel_num not in [1, 2] or
-        measurement_type not in ['T', 'S', 'D']):
+    try :
+        validate(input, reflectivity_input_schema)
 
-            return jsonify({
-                'error': 'Invalid input',
-                'valid_mirrors': ['primary', 'secondary', 'tertiary'],
-                'valid_tel_nums': [1, 2],
-                'valid_measurement_types': ['T', 'S', 'D']
+    except:
+        return jsonify({
+            'error': 'Invalid Input!',
+            'valid_data': reflectivity_input_schema['properties']
         })
+    
+    mirror = input['mirror']
+    tel_num = input['tel_num']
+    measurement_type = input['measurement_type']
 
 
     # connect to mysql database with config file
@@ -161,6 +194,19 @@ if __name__ == "__main__":
     port = api_config['port']
     # list of integers for all valid segment id numbers 
     valid_segs = api_config['valid_segs']
+
+    SWAGGER_URL = '/aniani/swagger'
+    API_URL = f'/aniani/swagger.json'
+
+    # Call factory function to create our blueprint
+    swaggerui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,  # Swagger UI static files will be mapped to '{SWAGGER_URL}/dist/'
+    API_URL,
+    config={  # Swagger UI config overrides
+        'app_name': "ani ani Application"
+    })
+
+    app.register_blueprint(swaggerui_blueprint)
 
     # run flask server with given config file
     app.run(host=host, port=port)

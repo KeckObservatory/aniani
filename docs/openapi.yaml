@@ -35,12 +35,30 @@ paths:
             example: T
       responses:
         '200':
-          description: Returns a list of dicts from rows in MirrorSamples
+          description: Returns a list of dictionaries from rows in MirrorSamples
           content:
-            application/json
+            application/json:
               schema:
-                type: list
+                type: array
                 items:
-                  $ref: '#/components/schemas/data_row' 
-  /
+                  $ref: '#/components/schemas/MirrorSample'
+
+components:
+  schemas:
+    MirrorSample:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        mirror:
+          type: string
+          example: primary
+        telescope_num:
+          type: integer
+          example: 1
+        measurement_type:
+          type: string
+          example: T
+      
           

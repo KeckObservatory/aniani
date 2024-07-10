@@ -2,6 +2,7 @@ import configparser
 import mysql.connector
 from datetime import datetime
 import math
+from jsonschema import validate
 
 # functions for the aniani application!
 
@@ -82,7 +83,7 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
     cursor = connection.cursor()
 
     # rank the data by the install date (to find the most recent)
-    query = f"""
+    query = """
     WITH ranked_data AS (
         SELECT *,
             ROW_NUMBER() OVER (
@@ -92,10 +93,10 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
         FROM
             MirrorSamples
         WHERE
-            mirror = '{mirror}'
+            mirror = %s
             AND sample_status = 'clean'
-            AND telescope_num = {tel_num}
-            AND measurement_type = '{measurment_type}'
+            AND telescope_num = %s
+            AND measurement_type = %s
     )
     SELECT *
     FROM
@@ -104,9 +105,11 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
         rn = 1;
     """
 
+    params = (mirror, tel_num,  measurment_type)
+
     # run query and make sure the rows are stored as dictionaries 
     cursor = connection.cursor(dictionary=True)
-    cursor.execute(query)
+    cursor.execute(query, params)
     results = cursor.fetchall()
 
     # close the cursor
@@ -346,7 +349,6 @@ def find_predicted_reflectivity(tel_current, deg_avg, clean_avg):
     return tel_current
 
 
-
 def find_rate_per_year(deg_avg):
     """
     
@@ -365,3 +367,5 @@ def find_rate_per_year(deg_avg):
         deg_avg[spectrum]['rate_of_decay'] = -1 * deg_avg[spectrum]['rms'] * 365
 
     return deg_avg
+
+
