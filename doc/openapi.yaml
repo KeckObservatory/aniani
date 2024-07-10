@@ -1,0 +1,46 @@
+openapi: 3.0.3
+info:
+  title: aniani api
+  description: api for aniani reflectivity information
+  contact:
+    email: adelagarza@keck.hawaii.edu
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/
+paths:
+  /getCurrent:
+    get:
+      description: Returns a list of dictionaries for all the data of the active segment(s) (based on most recent install date) that are currently on for a given telescope, measurement_type, and mirror
+      parameters:
+        - name: tel_num
+          in: query
+          description: Keck telescope number
+          required: true
+          schema:
+            type: integer
+            example: 1
+        - name: mirror
+          in: query
+          description: Keck telescope mirror
+          required: true
+          schema:
+            type: string
+            example: primary
+        - name: measurement_type
+          in: query
+          description: Type of light measurement
+          required: true
+          schema:
+            type: string
+            example: T
+      responses:
+        '200':
+          description: Returns a list of dicts from rows in MirrorSamples
+          content:
+            application/json
+              schema:
+                type: list
+                items:
+                  $ref: '#/components/schemas/data_row' 
+  /
+          
