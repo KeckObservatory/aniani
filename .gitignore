@@ -1,4 +1,4 @@
-/keck
+/venv
 *config.live.ini
 .DS_Store
 __pycache__
