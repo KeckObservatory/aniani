@@ -41,24 +41,74 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MirrorSample'
-
+                  $ref: '#/components/schemas/get_current_output'
+  /getPredicts:
+    get:
+      description: Returns a list of dictionaries for all the data of the active segment(s) (based on most recent install date) that are currently on for a given telescope, measurement_type, and mirror
+      parameters:
+        - name: tel_num
+          in: query
+          description: Keck telescope number
+          required: true
+          schema:
+            type: integer
+            example: 1
+        - name: mirror
+          in: query
+          description: Keck telescope mirror
+          required: true
+          schema:
+            type: string
+            example: primary
+        - name: measurement_type
+          in: query
+          description: Type of light measurement
+          required: true
+          schema:
+            type: string
+            example: T
+      responses:
+      
+  
 components:
   schemas:
-    MirrorSample:
+    get_current_output:
       type: object
       properties:
-        id:
-          type: integer
-          example: 1
+        400-540:
+          type: number
+          example: 0.909
+        480-600:
+          type: number
+          example: 0.906
+        590-720:
+          type: number
+          example: 0.895
+        900-1100:
+          type: number
+          example: 0.891
+        install_date:
+          type: string
+          example: Wed, 28 April 2021
+        measured_date:
+          type: string
+          example: Sat, 16 Jan 2021
         mirror:
           type: string
           example: primary
-        telescope_num:
-          type: integer
-          example: 1
         measurement_type:
           type: string
           example: T
+        mirror_type:
+          type: string
+          example: 1
+        segment_id:
+          type: integer
+          example: 49
+          
+    get_predicts_output:
+      type: object
+      properites:
+      
       
           

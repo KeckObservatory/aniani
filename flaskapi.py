@@ -5,6 +5,7 @@ from aniani_functions import *
 from jsonschema import validate
 from flask_swagger_ui import get_swaggerui_blueprint
 import yaml
+import db_conn
 
 app = Flask(__name__)
 
@@ -18,9 +19,19 @@ reflectivity_input_schema = {
     "required": ["mirror", "tel_num", "measurement_type"]
 }
 
+# --------------------
+# with Keck db_conn.py db connector
+#connection = db_conn.db_conn('config.live.ini', 'aniani')
+# if connection.error():
+#   connection.close()
+# --------------------
+
+
 #---------------------------------------
 # ANIANI API Routes
 #---------------------------------------
+
+spectra = ['400-540', '480-600', '590-720', '900-1100']
 
 @app.route("/", methods=["GET"])
 def home():
@@ -58,6 +69,7 @@ def get_current_reflectivity():
     "measurement_type": request.args['measurement_type'].upper()
     }       
 
+    # validate input parameters
     validate(input, reflectivity_input_schema)
     
     mirror = input['mirror']
@@ -71,23 +83,28 @@ def get_current_reflectivity():
     # find current segments on the telescope and their information
     tel_current = get_active_segs(connection, tel_num, mirror, measurement_type)
 
+    # creating a new dictionary to send to front end
+    # will send 36 dicts, one for each current segment position
     pretty_print = {}
 
     for item in tel_current:
         seg_pos = item['segment_position']
         spectrum = item['spectrum']
-        pretty_print[seg_pos] = {
-            'install_date': item['install_date'],
-            'measured_date': item['measured_date'],
-            'measurement_type': item['measurement_type'],
-            'mirror': item['mirror'],
-            'mirror_type': item['mirror_type'],
-            'seg_id': item['segment_id'],
-            spectrum: item['reflectivity']
-        }
+        
+        if seg_pos not in pretty_print:
+            pretty_print[seg_pos] = {
+                'install_date': item['install_date'],
+                'measured_date': item['measured_date'],
+                'measurement_type': item['measurement_type'],
+                'mirror': item['mirror'],
+                'mirror_type': item['mirror_type'],
+                'seg_id': item['segment_id']
+            }
+        
+        # for each spectrum -> add the reflectivity
+        pretty_print[seg_pos][spectrum] = item['reflectivity']
 
     return jsonify(pretty_print)
-
 
 
 @app.route("/getRecentFromDate", methods=['GET'])
@@ -131,10 +148,10 @@ def get_predicted_reflectivity():
 
     # find the average spectural 'S' reflectivity for each wavelength for a telescope
     # coating.PM.witness.Spect_avg(1, 4)
-    clean_avg = find_avg_rms(data, ['400-540', '480-600', '590-720', '900-1100'], 'clean', 'reflectivity')
+    clean_avg = find_avg_rms(data, spectra, 'clean', 'reflectivity')
 
     # coating.PM.mirror.Spect_avg(1, 4)
-    dirty_avg = find_avg_rms(data, ['400-540', '480-600', '590-720', '900-1100'], 'dirty', 'reflectivity')
+    dirty_avg = find_avg_rms(data, spectra, 'dirty', 'reflectivity')
 
     # find the difference in the clean and dirty samples and calulate reflectivity degredation
     # coating.PM.mirror.Spectral_diff 
@@ -143,7 +160,7 @@ def get_predicted_reflectivity():
 
     # find the degredation values
     # coating.PM.mirror.Spectral_slope (1, 4) 
-    deg_avg = find_avg_rms(data, ['400-540', '480-600', '590-720', '900-1100'], 'dirty', 'degredation')
+    deg_avg = find_avg_rms(data, spectra, 'dirty', 'degredation')
 
     # find current segments on the telescope
     # coating.tel_current from coating.PM.witness.Spectrual (most recent clean samples)
@@ -157,20 +174,48 @@ def get_predicted_reflectivity():
     # coating.tel_current(5, ,6, 7, 8)
     tel_current = find_predicted_reflectivity(tel_current, deg_avg, clean_avg)
 
+
     # upper left hand corner
     # mean(coating.tell_current(5, 6, 7, 8)
     # Ravg
-    r_avg = find_avg_rms(tel_current, ['400-540', '480-600', '590-720', '900-1100'], 'clean', 'predict_reflectivity' )
+    r_avg = find_avg_rms(tel_current, spectra, 'clean', 'predict_reflectivity' )
 
     # lower left hand corner
     # -1 * coating.PM.mirror.Spectral_slope(4) * 365
     # -1*RMS dR/year
     deg_avg = find_rate_per_year(deg_avg)
 
-    # consolidation of all data to be plotted
-    to_plot = {}
+    pretty_print = {}
 
-    return jsonify(deg_avg)
+    # making the dictionary to return
+    # for dictionaries, one for each wavelength
+    for spectrum in spectra:
+        pretty_print[spectrum] = {
+            'r_avg': r_avg[spectrum]['average'],
+            'dR/year': deg_avg[spectrum]['rate_of_decay'],
+            'segments': {}
+        }
+
+    # adding the current reflectivity data into the return dicts
+    for item in tel_current:
+        seg_pos = item['segment_position']
+        spectrum = item['spectrum']
+
+        if seg_pos not in pretty_print:
+            pretty_print[spectrum]['segments'][seg_pos] = {
+                'install_date': item['install_date'],
+                'measured_date': item['measured_date'],
+                'measurement_type': item['measurement_type'],
+                'mirror': item['mirror'],
+                'mirror_type': item['mirror_type'],
+                'seg_id': item['segment_id']
+            }
+        
+        # for each spectrum -> add the reflectivity
+        pretty_print[seg_pos][spectrum] = item['reflectivity']
+
+    
+    return jsonify(pretty_print)
 
 
 

@@ -80,7 +80,7 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
     :rtype: list (of dicts)
     """    
     # connect to the db
-    cursor = connection.cursor()
+    # cursor = connection.cursor()
 
     # rank the data by the install date (to find the most recent)
     query = """
@@ -107,15 +107,19 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
 
     params = (mirror, tel_num,  measurment_type)
 
+    # --------------------
+    # active = connection.query(query, params)
+    # --------------------
+
     # run query and make sure the rows are stored as dictionaries 
     cursor = connection.cursor(dictionary=True)
     cursor.execute(query, params)
-    results = cursor.fetchall()
+    active = cursor.fetchall()
 
     # close the cursor
     cursor.close()
 
-    return results  
+    return active
 
 
 def get_mirrorsamples(connection, mirror, tel_num, measurement_type):
@@ -145,6 +149,10 @@ def get_mirrorsamples(connection, mirror, tel_num, measurement_type):
     """
 
     params = (mirror, tel_num, measurement_type)
+
+    # --------------------
+    # active = connection.query(query, params)
+    # --------------------
 
     cursor = connection.cursor(dictionary=True)
     cursor.execute(query, params)

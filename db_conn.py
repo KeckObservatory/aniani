@@ -2,6 +2,8 @@ from os.path import isfile
 import yaml
 import pymysql.cursors
 import subprocess
+import configparser
+
 
 class db_conn(object):
     """
@@ -33,10 +35,18 @@ class db_conn(object):
         if not isfile(configFile):
             self.error = "DATABASE_CONFIG_ERROR"
             return None
-        with open(configFile) as f: self.config = yaml.safe_load(f)
+
+        # -----------------------------------    
+        self.config = configparser.ConfigParser()
+        self.config.read(configFile)
+        # -----------------------------------
+
+        #with open(configFile) as f: self.config = yaml.safe_load(f)
         if database not in self.config:
             self.error = "DATABASE_CONFIG_ERROR"
             return None
+
+            
         self.config = self.config[database]
 
         self.conn = None
