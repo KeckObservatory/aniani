@@ -68,6 +68,14 @@ paths:
             type: string
             example: T
       responses:
+        '200':
+          description: returns 4 dictionaries, one for each wavelength with the corresponding mean values and segment values
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/get_predicts_output'
       
   
 components:
@@ -106,9 +114,45 @@ components:
           type: integer
           example: 49
           
+
     get_predicts_output:
       type: object
-      properites:
-      
+      properties:
+        spectrum:
+          type: object
+          properties:
+            dR/year:
+              type: number
+              example: -0.0015166
+            r_avg:
+              type: number
+              example: 0.915104
+            segments:
+              type: object
+              properties:
+                segment_position:
+                  type: object
+                  properties:
+                    install_date:
+                      type: string
+                      example: Wed, 28 April 2021
+                    measured_date:
+                      type: string
+                      example: Sat, 16 Jan 2021
+                    mirror:
+                      type: string
+                      example: primary
+                    measurement_type:
+                      type: string
+                      example: T
+                    mirror_type:
+                      type: string
+                      example: 1
+                    segment_id:
+                      type: integer
+                      example: 49
+                    predict_reflectivity:
+                      type: number
+                      example: 0.92
       
           

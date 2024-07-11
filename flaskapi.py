@@ -201,19 +201,16 @@ def get_predicted_reflectivity():
         seg_pos = item['segment_position']
         spectrum = item['spectrum']
 
-        if seg_pos not in pretty_print:
+        if seg_pos not in pretty_print[spectrum]['segments']:
             pretty_print[spectrum]['segments'][seg_pos] = {
                 'install_date': item['install_date'],
                 'measured_date': item['measured_date'],
                 'measurement_type': item['measurement_type'],
                 'mirror': item['mirror'],
                 'mirror_type': item['mirror_type'],
-                'seg_id': item['segment_id']
+                'seg_id': item['segment_id'],
+                'predict_reflectivity': item['predict_reflectivity']
             }
-        
-        # for each spectrum -> add the reflectivity
-        pretty_print[seg_pos][spectrum] = item['reflectivity']
-
     
     return jsonify(pretty_print)
 
