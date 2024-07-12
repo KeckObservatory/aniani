@@ -56,27 +56,8 @@ class db_conn(object):
 
         #get db connect data
         server         = self.config["server"]
-        try:
-            readonlyserver = self.config["readonlyserver"]
-        except:
-            readonlyserver = server
         user           = self.config["user"]
         pwd            = self.config["pwd"]
-        port           = int(self.config["port"]) if "port" in self.config else 0
-
-        cmd = ["timeout", "0.5", "ping", "-c", "1", server]
-        try:
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-            p.wait()
-            output = p.stdout.readlines()
-            if len(output) == 0:
-                server = readonlyserver
-                self.readonly = True
-        except:
-            server = readonlyserver
-            self.readonly = True
-        finally:
-            p.stdout.close()
 
         #connect
         try:
@@ -85,9 +66,6 @@ class db_conn(object):
             for i,val in conv.items():
                 if val.__name__ in dates:
                     conv[i] = str
-#            conv[9]  = str       # convert datetime.date to string
-#            conv[10] = str       # convert datetime.datetime to string
-#            conv[11] = str       # convert datetime.timedelta to string
             self.conn = pymysql.connect(user=user, password=pwd, host=server, 
                                         database=database, autocommit=True, 
                                         conv=conv)
