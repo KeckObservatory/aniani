@@ -3,6 +3,7 @@ import configparser
 from datetime import datetime
 import math
 from jsonschema import validate
+import db_conn
 
 # functions for the aniani application!
 
@@ -54,6 +55,12 @@ from jsonschema import validate
 
 #     # returning the connection
 #     return connection
+
+def create_db_connection():
+    # with Keck db_conn.py db connector
+    connection = db_conn.db_conn('config.live.ini', 'aniani')
+    if connection.error():
+        connection.close()
 
 
 def get_active_segs(connection, tel_num, mirror, measurment_type):
@@ -108,18 +115,18 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
     params = (mirror, tel_num,  measurment_type)
 
     # --------------------
-    # active = connection.query(query, params)
+    active_segs = connection.query(query, params)
     # --------------------
 
     # run query and make sure the rows are stored as dictionaries 
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute(query, params)
-    active = cursor.fetchall()
+    # cursor = connection.cursor(dictionary=True)
+    # cursor.execute(query, params)
+    # active = cursor.fetchall()
 
     # close the cursor
-    cursor.close()
+    # cursor.close()
 
-    return active
+    return active_segs
 
 
 def get_mirrorsamples(connection, mirror, tel_num, measurement_type):
@@ -139,7 +146,7 @@ def get_mirrorsamples(connection, mirror, tel_num, measurement_type):
     :rtype: list (of dicts)
     """    
 
-    cursor = connection.cursor()
+    # cursor = connection.cursor()
 
     # parameterized query to avoid sql injections
     # treats the parameters like strings (not executable code)
@@ -151,12 +158,12 @@ def get_mirrorsamples(connection, mirror, tel_num, measurement_type):
     params = (mirror, tel_num, measurement_type)
 
     # --------------------
-    # active = connection.query(query, params)
+    data = connection.query(query, params)
     # --------------------
 
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute(query, params)
-    data = cursor.fetchall()
+    # cursor = connection.cursor(dictionary=True)
+    # cursor.execute(query, params)
+    # data = cursor.fetchall()
 
     return data
 

@@ -19,13 +19,6 @@ reflectivity_input_schema = {
     "required": ["mirror", "tel_num", "measurement_type"]
 }
 
-# --------------------
-# with Keck db_conn.py db connector
-#connection = db_conn.db_conn('config.live.ini', 'aniani')
-# if connection.error():
-#   connection.close()
-# --------------------
-
 
 #---------------------------------------
 # ANIANI API Routes
@@ -77,8 +70,10 @@ def get_current_reflectivity():
     measurement_type = input['measurement_type']
 
     # connect to mysql database with config file
-    db_config = read_db_config('config.live.ini')
-    connection = create_db_connection(db_config)
+    # db_config = read_db_config('config.live.ini')
+    # connection = create_db_connection(db_config)
+
+    connection = create_db_connection()
 
     # find current segments on the telescope and their information
     tel_current = get_active_segs(connection, tel_num, mirror, measurement_type)
@@ -136,8 +131,10 @@ def get_predicted_reflectivity():
 
 
     # connect to mysql database with config file
-    db_config = read_db_config('config.live.ini')
-    connection = create_db_connection(db_config)
+    # db_config = read_db_config('config.live.ini')
+    # connection = create_db_connection(db_config)
+
+    connection = create_db_connection()
 
     # dict of all rows in the MirrorSamples table
     data = get_mirrorsamples(connection, mirror, tel_num, measurement_type)
