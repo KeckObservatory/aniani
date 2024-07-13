@@ -21,7 +21,6 @@ class aniani(unittest.TestCase):
         tests = list(product(tel_num_values, measurment_type_values, mirror_values))
 
         for tel_num, measurement_type, mirror in tests:
-            #print('GET CURRENT: ****** TESTING: ******', tel_num, measurement_type, mirror)
 
             query_string = {'tel_num': tel_num, 'measurement_type': measurement_type, 'mirror': mirror}
             response = self.client.get('/getCurrent', query_string=query_string)

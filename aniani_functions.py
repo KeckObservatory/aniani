@@ -59,8 +59,9 @@ import db_conn
 def create_db_connection():
     # with Keck db_conn.py db connector
     connection = db_conn.db_conn('config.live.ini', 'aniani')
-    if connection.error():
+    if connection.error:
         connection.close()
+    return connection
 
 
 def get_active_segs(connection, tel_num, mirror, measurment_type):
@@ -115,7 +116,8 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
     params = (mirror, tel_num,  measurment_type)
 
     # --------------------
-    active_segs = connection.query(query, params)
+    connection.query(query, params)
+    active_segs = connection.cursor.fetchall()
     # --------------------
 
     # run query and make sure the rows are stored as dictionaries 
