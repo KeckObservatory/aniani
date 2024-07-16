@@ -4,6 +4,7 @@ from datetime import datetime
 import math
 from jsonschema import validate
 import db_conn
+import pdb
 
 # functions for the aniani application!
 
@@ -58,7 +59,7 @@ import db_conn
 
 def create_db_connection():
     # with Keck db_conn.py db connector
-    connection = db_conn.db_conn('config.live.ini', 'aniani')
+    connection = db_conn.db_conn('config.live.ini', 'acs')
     if connection.error:
         connection.close()
     return connection
@@ -91,33 +92,62 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
     # cursor = connection.cursor()
 
     # rank the data by the install date (to find the most recent)
-    query = """
-    WITH ranked_data AS (
-        SELECT *,
-            ROW_NUMBER() OVER (
-                PARTITION BY segment_position, spectrum, measurement_type
-                ORDER BY install_date DESC
-            ) AS rn
-        FROM
-            MirrorSamples
-        WHERE
-            mirror = %s
+#    query = """
+#    WITH ranked_data AS (
+#        SELECT *,
+#            ROW_NUMBER() OVER (
+#                PARTITION BY segment_position, spectrum, measurement_type
+#                ORDER BY install_date DESC
+#            ) AS rn
+#        FROM
+#            MirrorSamples
+#        WHERE
+#            mirror = %s
+#            AND sample_status = 'clean'
+#            AND telescope_num = %s
+#            AND measurement_type = %s
+#    )
+#    SELECT *
+#    FROM
+#        ranked_data
+#    WHERE
+#        rn = 1;
+#    """
+    total = {}
+ 
+    if mirror == 'primary':
+        position = 1
+        while position <= 36:
+
+        query = """ 
+	select * from MirrorSamples ms
+	where 
+            mirror = 'primary;
             AND sample_status = 'clean'
             AND telescope_num = %s
             AND measurement_type = %s
-    )
-    SELECT *
-    FROM
-        ranked_data
-    WHERE
-        rn = 1;
-    """
+            AND segment_position = %s
+	    
+           AND ms.install_date = (
+        SELECT MAX(sub.install_date)
+        FROM MirrorSamples sub
+        WHERE 
+            sub.mirror = 'primary'
+            AND sub.sample_status = 'clean'
+            AND sub.telescope_num = ms.telescope_num
+            AND sub.measurement_type = ms.measurement_type
+            AND sub.segment_position = ms.segment_pos
+        )
+        """
+        params = (tel_num,  measurment_type, position)
 
-    params = (mirror, tel_num,  measurment_type)
 
     # --------------------
-    connection.query(query, params)
-    active_segs = connection.cursor.fetchall()
+        active_segs = connection.query(query, params)
+        # active_segs = connection.cursor.fetchall()
+
+        total += active_segs
+        position += 1
     # --------------------
 
     # run query and make sure the rows are stored as dictionaries 
@@ -128,7 +158,7 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
     # close the cursor
     # cursor.close()
 
-    return active_segs
+    return total
 
 
 def get_mirrorsamples(connection, mirror, tel_num, measurement_type):

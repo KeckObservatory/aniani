@@ -77,7 +77,7 @@ def get_current_reflectivity():
 
     # find current segments on the telescope and their information
     tel_current = get_active_segs(connection, tel_num, mirror, measurement_type)
-
+    return tel_current
     # creating a new dictionary to send to front end
     # will send 36 dicts, one for each current segment position
     pretty_print = {}
