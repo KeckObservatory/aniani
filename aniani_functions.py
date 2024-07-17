@@ -64,8 +64,8 @@ def create_db_connection():
         connection.close()
     return connection
 
-
-def get_active_segs(connection, tel_num, mirror, measurment_type):
+'''
+def get_active_segs(connection, telescope_num, mirror, measurment_type):
     """
     For a given mirror, telescope and measurement type (T,D,S), will return a dictionary
     of the active segment(s) and their values from the table MirrorSamples.
@@ -79,8 +79,8 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
 
     :param connection: connecton to the mysql db    
     :type connection: object
-    :param tel_num: Keck telescope number (1 or 2)
-    :type tel_num: int
+    :param telescope_num: Keck telescope number (1 or 2)
+    :type telescope_num: int
     :param mirror: Keck telescope mirror ('primary','secondary','tertiary')
     :type mirror: str
     :param measurment_type: type of wavelength measurement ('T', 'D', 'S')
@@ -117,30 +117,29 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
  
     if mirror == 'primary':
         position = 1
-        while position <= 36:
-
-        query = """ 
-	select * from MirrorSamples ms
-	where 
-            mirror = 'primary;
-            AND sample_status = 'clean'
-            AND telescope_num = %s
-            AND measurement_type = %s
-            AND segment_position = %s
-	    
-           AND ms.install_date = (
-        SELECT MAX(sub.install_date)
-        FROM MirrorSamples sub
-        WHERE 
-            sub.mirror = 'primary'
-            AND sub.sample_status = 'clean'
-            AND sub.telescope_num = ms.telescope_num
-            AND sub.measurement_type = ms.measurement_type
-            AND sub.segment_position = ms.segment_pos
-        )
-        """
-        params = (tel_num,  measurment_type, position)
-
+       # while position <= 36:
+    
+    query = """ 
+                select * from MirrorSamples ms
+                where 
+                        mirror = 'primary;
+                        AND sample_status = 'clean'
+                        AND telescope_num = %s
+                        AND measurement_type = %s
+                        AND segment_position = %s
+                    
+                    AND ms.install_date = (
+                    SELECT MAX(sub.install_date)
+                    FROM MirrorSamples sub
+                    WHERE 
+                        sub.mirror = 'primary'
+                        AND sub.sample_status = 'clean'
+                        AND sub.telescope_num = ms.telescope_num
+                        AND sub.measurement_type = ms.measurement_type
+                        AND sub.segment_position = ms.segment_pos
+                    )
+                """
+        params = (telescope_num,  measurment_type, position)
 
     # --------------------
         active_segs = connection.query(query, params)
@@ -159,9 +158,9 @@ def get_active_segs(connection, tel_num, mirror, measurment_type):
     # cursor.close()
 
     return total
+    '''
 
-
-def get_mirrorsamples(connection, mirror, tel_num, measurement_type):
+def get_mirrorsamples(connection, mirror, telescope_num, measurement_type):
     """
     Get all the data from the MirrorSamples table from the database, and create
     a list of dictionaries where each dictionary is a corresponding row in the db.
@@ -170,8 +169,8 @@ def get_mirrorsamples(connection, mirror, tel_num, measurement_type):
     :type connection: object
     :param mirror: Keck telescope mirror ('primary','secondary','tertiary')
     :type mirror: str
-    :param tel_num: Keck telescope number (1 or 2)
-    :type tel_num: int
+    :param telescope_num: Keck telescope number (1 or 2)
+    :type telescope_num: int
     :param measurment_type: type of wavelength measurement ('T', 'D', 'S')
     :type measurment_type: str
     :return: a list of dictionaries of the rows from the MirrorSamples table 
@@ -187,7 +186,7 @@ def get_mirrorsamples(connection, mirror, tel_num, measurement_type):
         WHERE mirror = %s AND telescope_num = %s AND measurement_type = %s;
     """
 
-    params = (mirror, tel_num, measurement_type)
+    params = (mirror, telescope_num, measurement_type)
 
     # --------------------
     data = connection.query(query, params)

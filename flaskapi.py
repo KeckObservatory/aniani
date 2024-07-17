@@ -6,18 +6,10 @@ from jsonschema import validate
 from flask_swagger_ui import get_swaggerui_blueprint
 import yaml
 import db_conn
+import schemas
+
 
 app = Flask(__name__)
-
-reflectivity_input_schema = {
-    "type": "object",
-    "properties": {
-        "mirror": {"type": "string", "enum": ["primary", "secondary", "tertiary"]},
-        "tel_num": {"type": "integer", "enum": [1, 2]},
-        "measurement_type": {"type": "string", "enum": ["T", "S", "D"]}
-    },
-    "required": ["mirror", "tel_num", "measurement_type"]
-}
 
 
 #---------------------------------------
@@ -28,7 +20,8 @@ spectra = ['400-540', '480-600', '590-720', '900-1100']
 
 @app.route("/", methods=["GET"])
 def home():
-    return {"status":"sucess", "message":"home page for aniani applicaton"}
+    return {"status":"success", "message":"home page for aniani applicaton"}
+
 
 @app.route("/aniani/swagger.json", methods=["GET"])
 def swagger():
@@ -37,12 +30,30 @@ def swagger():
         return jsonify(yaml.safe_load(f))
 
 
-@app.route("/addData", methods=['POST'])
-def add_data():
-    '''
-    data needed to add to db... -> every col except is_deleted
-    '''
-    data_to_write = request.args.to_dict()
+@app.route("/addReflectivityMeasurement", methods=['POST'])
+def add_reflectivity_measurement():
+
+    # grab data put into table rows! 
+    to_write = request.json()
+
+    # validate input parameters
+    validate(to_write, add_reflectivity_measurement_schema)
+
+    # create db connection 
+    connection = create_db_connection()
+
+
+    # for each dict in input 
+    for row in to_write:
+
+        # grab table cols and values to insert into table
+        table_cols = ', ',join(to_write.keys())
+        table_values = ', '.join(to_write.values())
+
+        # for now, no default value -> manually set to 0 for not deleted 
+        query = f"insert into MirrorSamples ({table_cols}, is_deleted) values ({table_values}, 0)"
+
+        connection.query(query)
 
 
 @app.route("/deleteData", methods=['PATCH'])
@@ -53,20 +64,20 @@ def delete_data():
     pass
 
 
-@app.route("/getCurrent", methods=['GET'])
+@app.route("/getCurrentReflectivity", methods=['GET'])
 def get_current_reflectivity():
 
     input = {
-    "mirror": request.args['mirror'].lower(),
-    "tel_num": int(request.args['tel_num']),
-    "measurement_type": request.args['measurement_type'].upper()
+        "mirror": request.args['mirror'].lower(),
+        "telescope_num": int(request.args['telescope_num']),
+        "measurement_type": request.args['measurement_type'].upper()
     }       
 
     # validate input parameters
     validate(input, reflectivity_input_schema)
     
     mirror = input['mirror']
-    tel_num = input['tel_num']
+    telescope_num = input['telescope_num']
     measurement_type = input['measurement_type']
 
     # connect to mysql database with config file
@@ -76,10 +87,10 @@ def get_current_reflectivity():
     connection = create_db_connection()
 
     # find current segments on the telescope and their information
-    tel_current = get_active_segs(connection, tel_num, mirror, measurement_type)
+    tel_current = get_active_segs(connection, telescope_num, mirror, measurement_type)
     return tel_current
     # creating a new dictionary to send to front end
-    # will send 36 dicts, one for each current segment position
+    # will send  1 or 36 dicts, one for each current segment position
     pretty_print = {}
 
     for item in tel_current:
@@ -112,7 +123,7 @@ def get_predicted_reflectivity():
 
     input = {
         "mirror": request.args['mirror'].lower(),
-        "tel_num": int(request.args['tel_num']),
+        "telescope_num": int(request.args['telescope_num']),
         "measurement_type": request.args['measurement_type'].upper()
         }       
 
@@ -126,7 +137,7 @@ def get_predicted_reflectivity():
         })
     
     mirror = input['mirror']
-    tel_num = input['tel_num']
+    telescope_num = input['telescope_num']
     measurement_type = input['measurement_type']
 
 
@@ -137,7 +148,7 @@ def get_predicted_reflectivity():
     connection = create_db_connection()
 
     # dict of all rows in the MirrorSamples table
-    data = get_mirrorsamples(connection, mirror, tel_num, measurement_type)
+    data = get_mirrorsamples(connection, mirror, telescope_num, measurement_type)
 
     # find the time differences between measured and install date
     # coating.PM.time_delta
@@ -161,7 +172,7 @@ def get_predicted_reflectivity():
 
     # find current segments on the telescope
     # coating.tel_current from coating.PM.witness.Spectrual (most recent clean samples)
-    tel_current = get_active_segs(connection, tel_num, mirror, measurement_type)
+    tel_current = get_active_segs(connection, telescope_num, mirror, measurement_type)
 
     # find time difference between meansred and install date for clean samples
     # coating.tel_current(4)
