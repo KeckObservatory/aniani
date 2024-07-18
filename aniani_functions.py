@@ -64,7 +64,7 @@ def create_db_connection():
         connection.close()
     return connection
 
-'''
+
 def get_active_segs(connection, telescope_num, mirror, measurment_type):
     """
     For a given mirror, telescope and measurement type (T,D,S), will return a dictionary
@@ -88,77 +88,71 @@ def get_active_segs(connection, telescope_num, mirror, measurment_type):
     :return: a list of dictionaries of the rows from the MirrorSamples table from the most recent install date
     :rtype: list (of dicts)
     """    
-    # connect to the db
-    # cursor = connection.cursor()
 
-    # rank the data by the install date (to find the most recent)
-#    query = """
-#    WITH ranked_data AS (
-#        SELECT *,
-#            ROW_NUMBER() OVER (
-#                PARTITION BY segment_position, spectrum, measurement_type
-#                ORDER BY install_date DESC
-#            ) AS rn
-#        FROM
-#            MirrorSamples
-#        WHERE
-#            mirror = %s
-#            AND sample_status = 'clean'
-#            AND telescope_num = %s
-#            AND measurement_type = %s
-#    )
-#    SELECT *
-#    FROM
-#        ranked_data
-#    WHERE
-#        rn = 1;
-#    """
-    total = {}
+    total = []
  
     if mirror == 'primary':
         position = 1
-       # while position <= 36:
+        while position <= 36:
     
-    query = """ 
-                select * from MirrorSamples ms
-                where 
-                        mirror = 'primary;
-                        AND sample_status = 'clean'
-                        AND telescope_num = %s
-                        AND measurement_type = %s
-                        AND segment_position = %s
-                    
+            query = """ 
+                SELECT * 
+                FROM MirrorSamples ms
+                WHERE 
+                    mirror = 'primary'
+                    AND sample_status = 'clean'
+                    AND telescope_num = %s
+                    AND measurement_type = %s
+                    AND segment_position = %s
                     AND ms.install_date = (
-                    SELECT MAX(sub.install_date)
-                    FROM MirrorSamples sub
-                    WHERE 
-                        sub.mirror = 'primary'
-                        AND sub.sample_status = 'clean'
-                        AND sub.telescope_num = ms.telescope_num
-                        AND sub.measurement_type = ms.measurement_type
-                        AND sub.segment_position = ms.segment_pos
+                        SELECT MAX(sub.install_date)
+                        FROM MirrorSamples sub
+                        WHERE 
+                            sub.mirror = 'primary'
+                            AND sub.sample_status = 'clean'
+                            AND sub.telescope_num = ms.telescope_num
+                            AND sub.measurement_type = ms.measurement_type
+                            AND sub.segment_position = ms.segment_position
                     )
                 """
-        params = (telescope_num,  measurment_type, position)
+      
+            params = (telescope_num,  measurment_type, position)
+
+            active_segs = connection.query(query, params)
+
+            total.extend(active_segs)
+            position += 1
+
+
+    # mirror is secondary or tertiary...
+    else:
+        query = """ 
+        SELECT * 
+        FROM MirrorSamples ms
+        WHERE 
+            mirror = 'primary'
+            AND sample_status = 'clean'
+            AND telescope_num = %s
+            AND measurement_type = %s
+            AND mirror = %s
+            AND ms.install_date = (
+                SELECT MAX(sub.install_date)
+                FROM MirrorSamples sub
+                WHERE 
+                    sub.mirror = 'primary'
+                    AND sub.sample_status = 'clean'
+                    AND sub.telescope_num = ms.telescope_num
+                    AND sub.measurement_type = ms.measurement_type
+                    AND sub.mirror= ms.mirror
+            )
+        """
+
+        params = (telescope_num,  measurment_type, mirror)
+        total = connection.query(query, params)
 
     # --------------------
-        active_segs = connection.query(query, params)
-        # active_segs = connection.cursor.fetchall()
-
-        total += active_segs
-        position += 1
-    # --------------------
-
-    # run query and make sure the rows are stored as dictionaries 
-    # cursor = connection.cursor(dictionary=True)
-    # cursor.execute(query, params)
-    # active = cursor.fetchall()
-
-    # close the cursor
-    # cursor.close()
-
     return total
-    '''
+
 
 def get_mirrorsamples(connection, mirror, telescope_num, measurement_type):
     """
@@ -182,19 +176,13 @@ def get_mirrorsamples(connection, mirror, telescope_num, measurement_type):
     # parameterized query to avoid sql injections
     # treats the parameters like strings (not executable code)
     query = """
-        SELECT * FROM mirrorsamples
+        SELECT * FROM MirrorSamples
         WHERE mirror = %s AND telescope_num = %s AND measurement_type = %s;
-    """
+        """
 
     params = (mirror, telescope_num, measurement_type)
 
-    # --------------------
     data = connection.query(query, params)
-    # --------------------
-
-    # cursor = connection.cursor(dictionary=True)
-    # cursor.execute(query, params)
-    # data = cursor.fetchall()
 
     return data
 
@@ -222,8 +210,8 @@ def find_time_diff(data):
         # if there are two dates, find the difference -> else just write error
         if measured_date is not None and install_date is not None:
 
-            measured_date = int(measured_date.strftime("%y%m%d"))
-            install_date = int(install_date.strftime("%y%m%d"))
+            measured_date = int(item['measured_date'].replace('-',''))
+            install_date = int(item['install_date'].replace('-',''))
 
             diff = measured_date - install_date
 

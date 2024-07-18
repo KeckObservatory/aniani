@@ -11,6 +11,7 @@ class aniani(unittest.TestCase):
     def tearDown(self):
         pass
 
+    '''
     def test_addReflectivityMeasurement(self):
 
         telescope_num = [1, 2]
@@ -28,10 +29,8 @@ class aniani(unittest.TestCase):
         notes = [None, 'testing']
 
         tests = list(product(telescope_num, measurment_type, mirror, segment_id, mirror_type, measured_date, install_date, sample_status, segment_position,))
-
-
-
     '''
+    
     def test_get_current(self):
 
         tel_num_values = [1, 2]
@@ -75,8 +74,8 @@ class aniani(unittest.TestCase):
             if isinstance(msg, list):
                 if len(msg)>0:
                     self.assertNotEqual(msg[0].get('status'), 'ERROR')
-    '''
-    '''
+    
+    
     def test_primary_predicts_route(self):
 
         tel_num_values = [1, 2, 3, 4, 't']
@@ -97,7 +96,6 @@ class aniani(unittest.TestCase):
             if isinstance(msg, list):
                 if len(msg)>0:
                     self.assertNotEqual(msg[0].get('status'), 'ERROR')
-    '''
     
         
 

@@ -6,7 +6,7 @@ from jsonschema import validate
 from flask_swagger_ui import get_swaggerui_blueprint
 import yaml
 import db_conn
-import schemas
+from schemas import reflectivity_input_schema, add_reflectivity_measurement_schema
 
 
 app = Flask(__name__)
@@ -30,7 +30,33 @@ def swagger():
         return jsonify(yaml.safe_load(f))
 
 
+@app.route("/getAllSamples", methods=["GET"])
+# returns all data from the MirrorSamples table
+def get_all_samples():
+
+    input = {
+        "mirror": request.args['mirror'].lower(),
+        "telescope_num": int(request.args['telescope_num']),
+        "measurement_type": request.args['measurement_type'].upper()
+    }       
+
+    # validate input parameters
+    validate(input, reflectivity_input_schema)
+    
+    mirror = input['mirror']
+    telescope_num = input['telescope_num']
+    measurement_type = input['measurement_type']
+
+    connection = create_db_connection()
+
+    # ask the database for all mirror samples
+    samples = get_mirrorsamples(connection, mirror, telescope_num, measurement_type)
+
+    return jsonify(samples)
+
+
 @app.route("/addReflectivityMeasurement", methods=['POST'])
+# add new rows of reflectivity information to the MirrorSamples table
 def add_reflectivity_measurement():
 
     # grab data put into table rows! 
@@ -41,7 +67,6 @@ def add_reflectivity_measurement():
 
     # create db connection 
     connection = create_db_connection()
-
 
     # for each dict in input 
     for row in to_write:
@@ -65,6 +90,7 @@ def delete_data():
 
 
 @app.route("/getCurrentReflectivity", methods=['GET'])
+# get the lastest reflectivity data from the segments that are on telescope now
 def get_current_reflectivity():
 
     input = {
@@ -80,15 +106,11 @@ def get_current_reflectivity():
     telescope_num = input['telescope_num']
     measurement_type = input['measurement_type']
 
-    # connect to mysql database with config file
-    # db_config = read_db_config('config.live.ini')
-    # connection = create_db_connection(db_config)
-
     connection = create_db_connection()
 
     # find current segments on the telescope and their information
     tel_current = get_active_segs(connection, telescope_num, mirror, measurement_type)
-    return tel_current
+
     # creating a new dictionary to send to front end
     # will send  1 or 36 dicts, one for each current segment position
     pretty_print = {}
@@ -118,7 +140,7 @@ def get_recent_data_from_date():
     pass
 
 
-@app.route("/getPredicts", methods=['GET'])
+@app.route("/getPredictReflectivity", methods=['GET'])
 def get_predicted_reflectivity():
 
     input = {
@@ -139,11 +161,6 @@ def get_predicted_reflectivity():
     mirror = input['mirror']
     telescope_num = input['telescope_num']
     measurement_type = input['measurement_type']
-
-
-    # connect to mysql database with config file
-    # db_config = read_db_config('config.live.ini')
-    # connection = create_db_connection(db_config)
 
     connection = create_db_connection()
 
