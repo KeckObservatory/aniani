@@ -2,7 +2,8 @@ from flask import Flask, request, jsonify
 from os.path import isfile
 import configparser
 from aniani_functions import *
-from jsonschema import validate
+import jsonschema
+from jsonschema import validate, ValidationError, Draft202012Validator
 from flask_swagger_ui import get_swaggerui_blueprint
 import yaml
 import db_conn
@@ -29,19 +30,35 @@ def swagger():
     with open(api_path, 'r') as f:
         return jsonify(yaml.safe_load(f))
 
+def validate_input(input, schema):
+    validator = Draft202012Validator(schema)
+    errors = []
+    for error in validator.iter_errors(input):
+        errors.append(f"{error.path.pop()}: {error.message}")
+    if errors:
+        return {
+            'error':  errors,
+        } 
 
 @app.route("/getAllSamples", methods=["GET"])
 # returns all data from the MirrorSamples table
 def get_all_samples():
 
-    input = {
-        "mirror": request.args['mirror'].lower(),
-        "telescope_num": int(request.args['telescope_num']),
-        "measurement_type": request.args['measurement_type'].upper()
-    }       
-
     # validate input parameters
-    validate(input, reflectivity_input_schema)
+    try:
+        input = {
+            "mirror": request.args['mirror'].lower(),
+            "telescope_num": int(request.args['telescope_num']),
+            "measurement_type": request.args['measurement_type'].upper()
+        }       
+        errOutput = validate_input(input, reflectivity_input_schema)
+        if errOutput:
+            return jsonify(errOutput), 400
+        # validate(input, reflectivity_input_schema)
+    except KeyError as err:
+        return jsonify({
+            'error': f'key error: {err} valid keys are: {", ".join([x for x in reflectivity_input_schema["properties"].keys()])}',
+        }), 400
     
     mirror = input['mirror']
     telescope_num = input['telescope_num']
@@ -64,6 +81,9 @@ def add_reflectivity_measurement():
 
     # validate input parameters
     validate(to_write, add_reflectivity_measurement_schema)
+    errOutput = validate_input(to_write, add_reflectivity_measurement_schema)
+    if errOutput:
+        return jsonify(errOutput), 400
 
     # create db connection 
     connection = create_db_connection()
@@ -72,7 +92,7 @@ def add_reflectivity_measurement():
     for row in to_write:
 
         # grab table cols and values to insert into table
-        table_cols = ', ',join(to_write.keys())
+        table_cols = ', '.join(to_write.keys())
         table_values = ', '.join(to_write.values())
 
         # for now, no default value -> manually set to 0 for not deleted 
@@ -100,7 +120,13 @@ def get_current_reflectivity():
     }       
 
     # validate input parameters
-    validate(input, reflectivity_input_schema)
+    try:
+        validate(input, reflectivity_input_schema)
+    except jsonschema.exceptions.ValidationError as err:
+        return jsonify({
+            'error': err.cause,
+            'valid_data': reflectivity_input_schema['properties']
+        }), 400
     
     mirror = input['mirror']
     telescope_num = input['telescope_num']

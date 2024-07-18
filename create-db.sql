@@ -2,9 +2,9 @@
 -- if need to change table properties: do it here ONLY
 
 -- Create the database
-CREATE DATABASE IF NOT EXISTS aniani;
+CREATE DATABASE IF NOT EXISTS acs;
 
-USE aniani;
+USE acs;
 
 -- CREATE INSTRUMENT CALIBRATION CHECK TABLES
 

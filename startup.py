@@ -87,6 +87,7 @@ def populate_db(my_db_conn, files):
 
 
         # Insert rows into the database
+        pdb.set_trace()
         for row in dataframe.itertuples(index=False):
             # Convert 'null' strings to None (which will be NULL in MySQL/MariaDB)   
             # pdb.set_trace()
@@ -109,11 +110,13 @@ def populate_db(my_db_conn, files):
 if __name__ == "__main__":
 
 
-    # pdb.set_trace()
+    pdb.set_trace()
     connection = db_conn.db_conn('config.live.ini','acs')
+    assert connection.errors == None, 'Error connecting to database'
+
  
-    #csv_insert_files = ['csv/MirrorSamples.csv', 'csv/CalibrationChecks.csv']
-    csv_insert_files = [ 'csv/CalibrationChecks.csv']
+    csv_insert_files = ['csv/MirrorSamples.csv', 'csv/CalibrationChecks.csv']
+    #csv_insert_files = [ 'csv/CalibrationChecks.csv']
     populate_db(connection,csv_insert_files)
 
 

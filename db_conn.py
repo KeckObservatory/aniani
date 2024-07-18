@@ -1,6 +1,5 @@
 from os.path import isfile
 import pymysql.cursors
-import subprocess
 import configparser
 
 
