@@ -3,7 +3,7 @@ from os.path import isfile
 import configparser
 from aniani_functions import *
 import jsonschema
-from jsonschema import validate, ValidationError, Draft202012Validator
+from jsonschema import validate, ValidationError, Draft7Validator
 from flask_swagger_ui import get_swaggerui_blueprint
 import yaml
 import db_conn
@@ -30,8 +30,9 @@ def swagger():
     with open(api_path, 'r') as f:
         return jsonify(yaml.safe_load(f))
 
+
 def validate_input(input, schema):
-    validator = Draft202012Validator(schema)
+    validator = Draft7Validator(schema)
     errors = []
     for error in validator.iter_errors(input):
         errors.append(f"{error.path.pop()}: {error.message}")
@@ -75,12 +76,13 @@ def get_all_samples():
 @app.route("/addReflectivityMeasurement", methods=['POST'])
 # add new rows of reflectivity information to the MirrorSamples table
 def add_reflectivity_measurement():
+    pdb.set_trace()
 
     # grab data put into table rows! 
     to_write = request.json()
 
     # validate input parameters
-    validate(to_write, add_reflectivity_measurement_schema)
+    # validate(to_write, add_reflectivity_measurement_schema)
     errOutput = validate_input(to_write, add_reflectivity_measurement_schema)
     if errOutput:
         return jsonify(errOutput), 400
@@ -97,35 +99,29 @@ def add_reflectivity_measurement():
 
         # for now, no default value -> manually set to 0 for not deleted 
         query = f"insert into MirrorSamples ({table_cols}, is_deleted) values ({table_values}, 0)"
+        print(query)
 
         connection.query(query)
-
-
-@app.route("/deleteData", methods=['PATCH'])
-def delete_data():
-    '''
-        data needed to update db -> 
-    '''
-    pass
 
 
 @app.route("/getCurrentReflectivity", methods=['GET'])
 # get the lastest reflectivity data from the segments that are on telescope now
 def get_current_reflectivity():
 
-    input = {
-        "mirror": request.args['mirror'].lower(),
-        "telescope_num": int(request.args['telescope_num']),
-        "measurement_type": request.args['measurement_type'].upper()
-    }       
-
     # validate input parameters
     try:
-        validate(input, reflectivity_input_schema)
-    except jsonschema.exceptions.ValidationError as err:
+        input = {
+            "mirror": request.args['mirror'].lower(),
+            "telescope_num": int(request.args['telescope_num']),
+            "measurement_type": request.args['measurement_type'].upper()
+        }       
+        errOutput = validate_input(input, reflectivity_input_schema)
+        if errOutput:
+            return jsonify(errOutput), 400
+        # validate(input, reflectivity_input_schema)
+    except KeyError as err:
         return jsonify({
-            'error': err.cause,
-            'valid_data': reflectivity_input_schema['properties']
+            'error': f'key error: {err} valid keys are: {", ".join([x for x in reflectivity_input_schema["properties"].keys()])}',
         }), 400
     
     mirror = input['mirror']
@@ -161,28 +157,24 @@ def get_current_reflectivity():
     return jsonify(pretty_print)
 
 
-@app.route("/getRecentFromDate", methods=['GET'])
-def get_recent_data_from_date():
-    pass
-
-
 @app.route("/getPredictReflectivity", methods=['GET'])
 def get_predicted_reflectivity():
 
-    input = {
-        "mirror": request.args['mirror'].lower(),
-        "telescope_num": int(request.args['telescope_num']),
-        "measurement_type": request.args['measurement_type'].upper()
+    # validate input parameters
+    try:
+        input = {
+            "mirror": request.args['mirror'].lower(),
+            "telescope_num": int(request.args['telescope_num']),
+            "measurement_type": request.args['measurement_type'].upper()
         }       
-
-    try :
-        validate(input, reflectivity_input_schema)
-
-    except:
+        errOutput = validate_input(input, reflectivity_input_schema)
+        if errOutput:
+            return jsonify(errOutput), 400
+        # validate(input, reflectivity_input_schema)
+    except KeyError as err:
         return jsonify({
-            'error': 'Invalid Input!',
-            'valid_data': reflectivity_input_schema['properties']
-        })
+            'error': f'key error: {err} valid keys are: {", ".join([x for x in reflectivity_input_schema["properties"].keys()])}',
+        }), 400
     
     mirror = input['mirror']
     telescope_num = input['telescope_num']
@@ -199,6 +191,7 @@ def get_predicted_reflectivity():
 
     # find the average spectural 'S' reflectivity for each wavelength for a telescope
     # coating.PM.witness.Spect_avg(1, 4)
+    pdb.set_trace()
     clean_avg = find_avg_rms(data, spectra, 'clean', 'reflectivity')
 
     # coating.PM.mirror.Spect_avg(1, 4)
@@ -265,6 +258,15 @@ def get_predicted_reflectivity():
     
     return jsonify(pretty_print)
 
+
+# not yet implemented...
+@app.route("/deleteData", methods=['PATCH'])
+def delete_data():
+    pass
+
+@app.route("/getRecentFromDate", methods=['GET'])
+def get_recent_data_from_date():
+    pass
 
 
 if __name__ == "__main__":

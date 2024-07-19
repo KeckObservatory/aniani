@@ -130,8 +130,7 @@ def get_active_segs(connection, telescope_num, mirror, measurment_type):
         SELECT * 
         FROM MirrorSamples ms
         WHERE 
-            mirror = 'primary'
-            AND sample_status = 'clean'
+            sample_status = 'clean'
             AND telescope_num = %s
             AND measurement_type = %s
             AND mirror = %s
@@ -139,8 +138,7 @@ def get_active_segs(connection, telescope_num, mirror, measurment_type):
                 SELECT MAX(sub.install_date)
                 FROM MirrorSamples sub
                 WHERE 
-                    sub.mirror = 'primary'
-                    AND sub.sample_status = 'clean'
+                    sub.sample_status = 'clean'
                     AND sub.telescope_num = ms.telescope_num
                     AND sub.measurement_type = ms.measurement_type
                     AND sub.mirror= ms.mirror
