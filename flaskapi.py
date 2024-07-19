@@ -32,6 +32,8 @@ def swagger():
 
 
 def validate_input(input, schema):
+    #print('input', input)
+    #pdb.set_trace()
     validator = Draft7Validator(schema)
     errors = []
     for error in validator.iter_errors(input):
@@ -76,32 +78,36 @@ def get_all_samples():
 @app.route("/addReflectivityMeasurement", methods=['POST'])
 # add new rows of reflectivity information to the MirrorSamples table
 def add_reflectivity_measurement():
-    pdb.set_trace()
+
 
     # grab data put into table rows! 
-    to_write = request.json()
+    to_write = request.json
 
     # validate input parameters
-    # validate(to_write, add_reflectivity_measurement_schema)
+    #pdb.set_trace()
     errOutput = validate_input(to_write, add_reflectivity_measurement_schema)
     if errOutput:
         return jsonify(errOutput), 400
 
-    # create db connection 
     connection = create_db_connection()
 
+    result = 0
     # for each dict in input 
     for row in to_write:
 
         # grab table cols and values to insert into table
-        table_cols = ', '.join(to_write.keys())
-        table_values = ', '.join(to_write.values())
+        table_cols = ', '.join(row.keys())
+        table_values = ', '.join([f"'{x}'" if isinstance(x,str) else str(x) for x in row.values()])
+        #pdb.set_trace()
+
 
         # for now, no default value -> manually set to 0 for not deleted 
         query = f"insert into MirrorSamples ({table_cols}, is_deleted) values ({table_values}, 0)"
-        print(query)
 
-        connection.query(query)
+        result += connection.query(query)
+        #print(result)
+
+    return jsonify(result), 200
 
 
 @app.route("/getCurrentReflectivity", methods=['GET'])
@@ -191,7 +197,7 @@ def get_predicted_reflectivity():
 
     # find the average spectural 'S' reflectivity for each wavelength for a telescope
     # coating.PM.witness.Spect_avg(1, 4)
-    pdb.set_trace()
+    #pdb.set_trace()
     clean_avg = find_avg_rms(data, spectra, 'clean', 'reflectivity')
 
     # coating.PM.mirror.Spect_avg(1, 4)

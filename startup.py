@@ -82,6 +82,7 @@ def populate_db(my_db_conn, files):
         col_names = [desc[0] for desc in my_conn.description]
         col_names = col_names[1:]
         num_cols = len(col_names)
+        
         col_cnt = ', '.join(['%s']*len(col_names))
         col_names = ', '.join(col_names)
 
