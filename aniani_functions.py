@@ -90,6 +90,7 @@ def get_active_segs(connection, telescope_num, mirror, measurment_type):
     """    
 
     total = []
+    #pdb.set_trace()
  
     if mirror == 'primary':
         position = 1
@@ -104,6 +105,7 @@ def get_active_segs(connection, telescope_num, mirror, measurment_type):
                     AND telescope_num = %s
                     AND measurement_type = %s
                     AND segment_position = %s
+                    AND is_deleted = 0
                     AND ms.install_date = (
                         SELECT MAX(sub.install_date)
                         FROM MirrorSamples sub
@@ -113,6 +115,7 @@ def get_active_segs(connection, telescope_num, mirror, measurment_type):
                             AND sub.telescope_num = ms.telescope_num
                             AND sub.measurement_type = ms.measurement_type
                             AND sub.segment_position = ms.segment_position
+                            AND sub.is_deleted = 0
                     )
                 """
       
@@ -134,6 +137,7 @@ def get_active_segs(connection, telescope_num, mirror, measurment_type):
             AND telescope_num = %s
             AND measurement_type = %s
             AND mirror = %s
+            AND is_deleted = 0
             AND ms.install_date = (
                 SELECT MAX(sub.install_date)
                 FROM MirrorSamples sub
@@ -142,6 +146,7 @@ def get_active_segs(connection, telescope_num, mirror, measurment_type):
                     AND sub.telescope_num = ms.telescope_num
                     AND sub.measurement_type = ms.measurement_type
                     AND sub.mirror= ms.mirror
+                    AND sub.is_deleted = 0
             )
         """
 
@@ -175,7 +180,7 @@ def get_mirrorsamples(connection, mirror, telescope_num, measurement_type):
     # treats the parameters like strings (not executable code)
     query = """
         SELECT * FROM MirrorSamples
-        WHERE mirror = %s AND telescope_num = %s AND measurement_type = %s;
+        WHERE mirror = %s AND telescope_num = %s AND measurement_type = %s AND is_deleted = 0;
         """
 
     params = (mirror, telescope_num, measurement_type)

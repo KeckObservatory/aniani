@@ -99,12 +99,13 @@ class aniani(unittest.TestCase):
         # Verify the data was inserted
         rows_added = self.connection.query("SELECT id FROM MirrorSamples WHERE notes = 'testing -- to delete' AND is_deleted = 0")
         
-        # self.assertTrue(msg == len(body), 'its not working!')
         self.assertEqual(msg, len(body))
 
         # update is deleted flag
         for row in rows_added:
             self.connection.query(f"UPDATE MirrorSamples SET is_deleted = 1 WHERE id = {row['id']}")
+
+        self.connect.query("UPDATE MirrorSamples SET is_deleted = 1 WHERE notes = 'testing -- to delete'")
     
 
     def test_get_current_reflectivity(self):

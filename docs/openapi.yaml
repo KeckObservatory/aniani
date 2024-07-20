@@ -6,67 +6,104 @@ info:
     email: adelagarza@keck.hawaii.edu
   version: 1.0.0
 servers:
-  - url: http://localhost:5000/
+  - url: http://vm-dev-appserver:5000/
 paths:
-  /getCurrent:
+  /getAllSamples:
     get:
-      description: Returns a list of dictionaries for all the data of the active segment(s) (based on most recent install date) that are currently on for a given telescope, measurement_type, and mirror
+      description: Returns all samples from a speciic mirror, telescope and measurement type. Every row in the MirrorSamples table that matches those will be returned.
       parameters:
-        - name: tel_num
-          in: query
-          description: Keck telescope number
-          required: true
-          schema:
-            type: integer
-            example: 1
         - name: mirror
           in: query
-          description: Keck telescope mirror
           required: true
           schema:
-            type: string
-            example: primary
+            $ref: '#/components/schemas/reflectivity_input_schema/properties/mirror'
+        - name: telescope_num
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/reflectivity_input_schema/properties/telescope_num'
         - name: measurement_type
           in: query
-          description: Type of light measurement
           required: true
           schema:
-            type: string
-            example: T
+            $ref: '#/components/schemas/reflectivity_input_schema/properties/measurement_type'
       responses:
         '200':
-          description: Returns a list of dictionaries from rows in MirrorSamples
+          description: Returns a list of dictionaries with each dict being a specific row in the table.
           content:
-            application/json:
+            json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/get_current_output'
-  /getPredicts:
+                  $ref: '#/components/schemas/get_all_samples_output'
+                
+                
+      
+      
+      
+  /addReflectivityMeasurement:
+    post:
+      description: Add new samples into the MirrorSamples table.
+      parameters:
+      
+    
+    
+    
+    
+    
+  /getCurrentReflectivity:
     get:
       description: Returns a list of dictionaries for all the data of the active segment(s) (based on most recent install date) that are currently on for a given telescope, measurement_type, and mirror
       parameters:
-        - name: tel_num
-          in: query
-          description: Keck telescope number
-          required: true
-          schema:
-            type: integer
-            example: 1
         - name: mirror
           in: query
-          description: Keck telescope mirror
           required: true
           schema:
-            type: string
-            example: primary
+            $ref: '#/components/schemas/reflectivity_input_schema/properties/mirror'
+        - name: telescope_num
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/reflectivity_input_schema/properties/telescope_num'
         - name: measurement_type
           in: query
-          description: Type of light measurement
           required: true
           schema:
-            type: string
-            example: T
+            $ref: '#/components/schemas/reflectivity_input_schema/properties/measurement_type'
+      responses:
+        '200':
+          description: Returns a list of dictionaries where each dictionary is the current reflectivity information of the segment / mirror on the telescope.
+          content:
+            json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/get_current_reflectiviy_output'
+                  
+                  
+                  
+                  
+                  
+  /getPredictReflectivity:
+    get:
+      description: Returns a list of dictionaries for all the data of the active segment(s) (based on most recent install date) that are currently on for a given telescope, measurement_type, and mirror
+      parameters:
+        - name: mirror
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/reflectivity_input_schema/properties/mirror'
+        - name: telescope_num
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/reflectivity_input_schema/properties/telescope_num'
+        - name: measurement_type
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/reflectivity_input_schema/properties/measurement_type'
+            
       responses:
         '200':
           description: returns 4 dictionaries, one for each wavelength with the corresponding mean values and segment values
@@ -75,12 +112,106 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/get_predicts_output'
+                  $ref: '#/components/schemas/get_predict_reflectiviy_output'
       
   
 components:
   schemas:
-    get_current_output:
+    reflectivity_input_schema:
+      type: object
+      properties:
+        mirror: 
+          type: string
+          enum:
+            - 'primary'
+            - 'secondary'
+            - 'tertiary'
+        telescope_num:
+          type: integer
+          enum:
+            - 1
+            - 2
+        measurement_type:
+          type: string
+          enum:
+            - 'T'
+            - 'D'
+            - 'S'
+      required:
+        - mirror
+        - telescope_num
+        - measurement_type
+        
+    add_reflectivity_measurement_schema:
+      type: object
+      properties:
+        mirror: 
+          type: string
+          enum:
+            - 'primary'
+            - 'secondary'
+            - 'tertiary'
+        segment_id:
+        mirror_type:
+        measured_date:
+        install_date:
+        sample_status:
+        telescope_num:
+        segment_position:
+        spectrum:
+        measurement_type:
+        reflectivity:
+        notes:
+        
+        
+    get_all_samples_output:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 4643
+        install_date:
+          type: string
+          example: '2022-10-27'
+        is_deleted:
+          type: integer
+          example: 0
+        measured_date:
+          type: string
+          example: '2022-10-27'
+        mirror:
+          type: string
+          example: primary
+        measurement_type:
+          type: string
+          example: T
+        mirror_type:
+          type: string
+          example: '1'
+        segment_id:
+          type: integer
+          example: 49     
+        segment_position:
+          type: integer
+          example: 18
+        spectrum:
+          type: string
+          example: '400-540'
+        telescope_num:
+          type: integer
+          example: 1
+        notes:
+          type: string
+          example: 'testing'
+        reflectivity:
+          type: number
+          example: 0.91
+        sample_status:
+          type: string
+          example: 'clean'
+
+
+    get_current_reflectiviy_output:
       type: object
       properties:
         400-540:
@@ -114,8 +245,8 @@ components:
           type: integer
           example: 49
           
-
-    get_predicts_output:
+          
+    get_predict_reflectiviy_output:
       type: object
       properties:
         spectrum:

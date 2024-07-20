@@ -57,7 +57,7 @@ def get_all_samples():
         errOutput = validate_input(input, reflectivity_input_schema)
         if errOutput:
             return jsonify(errOutput), 400
-        # validate(input, reflectivity_input_schema)
+
     except KeyError as err:
         return jsonify({
             'error': f'key error: {err} valid keys are: {", ".join([x for x in reflectivity_input_schema["properties"].keys()])}',
@@ -124,7 +124,7 @@ def get_current_reflectivity():
         errOutput = validate_input(input, reflectivity_input_schema)
         if errOutput:
             return jsonify(errOutput), 400
-        # validate(input, reflectivity_input_schema)
+
     except KeyError as err:
         return jsonify({
             'error': f'key error: {err} valid keys are: {", ".join([x for x in reflectivity_input_schema["properties"].keys()])}',
@@ -159,7 +159,6 @@ def get_current_reflectivity():
         
         # for each spectrum -> add the reflectivity
         pretty_print[seg_pos][spectrum] = item['reflectivity']
-
     return jsonify(pretty_print)
 
 
