@@ -3,6 +3,10 @@ from os.path import isfile
 import configparser
 from aniani_functions import *
 import jsonschema
+<<<<<<< Updated upstream
+=======
+#from jsonschema import validate, ValidationError, Draft202012Validator
+>>>>>>> Stashed changes
 from jsonschema import validate, ValidationError, Draft7Validator
 from flask_swagger_ui import get_swaggerui_blueprint
 import yaml
@@ -32,8 +36,11 @@ def swagger():
 
 
 def validate_input(input, schema):
+<<<<<<< Updated upstream
     #print('input', input)
     #pdb.set_trace()
+=======
+>>>>>>> Stashed changes
     validator = Draft7Validator(schema)
     errors = []
     for error in validator.iter_errors(input):
