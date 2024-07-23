@@ -4,6 +4,10 @@ import configparser
 from aniani_functions import *
 import jsonschema
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+#from jsonschema import validate, ValidationError, Draft202012Validator
+>>>>>>> Stashed changes
 =======
 #from jsonschema import validate, ValidationError, Draft202012Validator
 >>>>>>> Stashed changes
@@ -37,8 +41,11 @@ def swagger():
 
 def validate_input(input, schema):
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     #print('input', input)
     #pdb.set_trace()
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     validator = Draft7Validator(schema)
