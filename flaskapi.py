@@ -21,7 +21,7 @@ spectra = ['400-540', '480-600', '590-720', '900-1100']
 
 @app.route("/", methods=["GET"])
 def home():
-    return {"status":"success", "message":"home page for aniani applicaton"}
+    return jsonify({"message":"home page for aniani applicaton"})
 
 
 @app.route("/aniani/swagger.json", methods=["GET"])

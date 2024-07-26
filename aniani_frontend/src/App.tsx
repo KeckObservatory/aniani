@@ -1,35 +1,42 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import './helpful_css.css'
+
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import About from './pages/About.tsx';
+import Home from './pages/Home';
+import PredictedReflecivity from './pages/PredictedReflectivity.tsx'
 
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
-    <>
+    <Router>
       <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <h1 className="left-align">aniani application</h1>
+        <nav>
+        <p>Directory</p>
+          <ul>
+            <li>
+              <Link to="/">Home</Link>
+            </li>
+            <li>
+            <Link to="/About">About</Link>
+            </li>
+            <li>
+              <Link to="/getPredictReflectivity">Predicted Reflectivity</Link>
+            </li>
+          </ul>
+        </nav>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/About" element={<About />} />
+          <Route path="/getPredictReflectivity" element={<PredictedReflecivity />} />
+        </Routes>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </Router>
+  );
 }
 
 export default App
